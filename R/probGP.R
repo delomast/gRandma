@@ -1,39 +1,3 @@
-#' log-likelihood of relationship over multiple loci, no genotyping error
-#' 
-#'  
-probGPmult <- function(kid, gMa, gPa, altFreq, refFreq){
-	llh <- 0
-	for(i in 1:length(kid)){
-		potGpa <- gPa[i]
-		potGma <- gMa[i]
-		potKid <- kid[i]
-		
-		llh <- llh + pmfBetaBinomial(potGma, 2, altFreq, refFreq, log = TRUE) + pmfBetaBinomial(potGpa, 2, altFreq, refFreq, log = TRUE)
-		probSum <- 0
-		for(f in 0:2){
-			for(m in 0:2){
-				probSum <- probSum +
-					pmfBetaBinomial(f, 2, altFreq, refFreq) * condProbTrio(potGma, potGpa, m) * condProbTrio(f, m, potKid)
-			}
-		}
-		llh <- llh + log(probSum)
-	}
-	return(llh)
-}
-
-probU <- function(kid, gMa, gPa, altFreq, refFreq){
-	llh <- 0
-	for(i in 1:length(kid)){
-		potGpa <- gPa[i]
-		potGma <- gMa[i]
-		potKid <- kid[i]
-		
-		llh <- llh + pmfBetaBinomial(potGma, 2, altFreq, refFreq, log = TRUE) + pmfBetaBinomial(potGpa, 2, altFreq, refFreq, log = TRUE) +
-			pmfBetaBinomial(potKid, 2, altFreq, refFreq, log = TRUE)
-	}
-	return(llh)
-}
-
 #' log-likelihood of relationship of one locus with true genotypes
 #' 
 #'  
