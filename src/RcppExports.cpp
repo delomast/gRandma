@@ -5,19 +5,23 @@
 
 using namespace Rcpp;
 
-// rcpp_hello_world
-List rcpp_hello_world();
-RcppExport SEXP _gRandma_rcpp_hello_world() {
+// logBetaBinomPMF
+double logBetaBinomPMF(double n, double k, double a, double b);
+RcppExport SEXP _gRandma_logBetaBinomPMF(SEXP nSEXP, SEXP kSEXP, SEXP aSEXP, SEXP bSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    rcpp_result_gen = Rcpp::wrap(rcpp_hello_world());
+    Rcpp::traits::input_parameter< double >::type n(nSEXP);
+    Rcpp::traits::input_parameter< double >::type k(kSEXP);
+    Rcpp::traits::input_parameter< double >::type a(aSEXP);
+    Rcpp::traits::input_parameter< double >::type b(bSEXP);
+    rcpp_result_gen = Rcpp::wrap(logBetaBinomPMF(n, k, a, b));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gRandma_rcpp_hello_world", (DL_FUNC) &_gRandma_rcpp_hello_world, 0},
+    {"_gRandma_logBetaBinomPMF", (DL_FUNC) &_gRandma_logBetaBinomPMF, 4},
     {NULL, NULL, 0}
 };
 
