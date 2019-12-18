@@ -81,3 +81,35 @@ flipHets <- function(genotypes){
 	
 	return(newGenotypes)
 }
+
+#' check that no combination of two different values from one vectors sum to greater than 1
+#' used to make sure dropout rates don't violate assumptions
+#' returns TRUE is a combination is found that does sum to greater than 1
+#' @keywords internal
+#' @noRd
+checkSums <- function(x){
+	if(length(x) < 2) stop("internal error in checkSums")
+	for(i in 1:(length(x) - 1)){
+		for(j in (i+1):length(x)){
+			if(x[i] + x[j] > 1) return(TRUE)
+		}
+	}
+	return(FALSE)
+}
+
+#' recode genotypes based on allele calls, does differentiate between "AB" and "BA", so make sure
+#' everything is "flipped" appropriately
+#' @param genotypes dataframe with allele1 in column 1 and allele 2 in column 2, missing as NA
+#' @param key dataframe or matrix with row number being genotype code, allele 1 being column1 and
+#'   allele 2 being column 2
+#' @keywords internal
+#' @noRd
+recodeGenotypes <- function(genotypes, key){
+	newGenotypes <- genotypes[,1]
+	boolSelect <- !is.na(genotypes[,1])
+	for(i in 1:nrow(key)){
+		newGenotypes[boolSelect & genotypes[,1] == key[i,1] & genotypes[,2] == key[i,2]] <- i
+	}
+	
+	return(newGenotypes)
+}

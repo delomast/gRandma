@@ -20,7 +20,7 @@
 construct_grandma <- function(x){
 
 	# do some checking here of required values
-	gmaDataNames <- c("baseline", "mixture", "baselineParams", "unsamParams", "lociErr")
+	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys")
 	if(sum(names(x) != gmaDataNames) > 0) stop("Wrong names to make a gmaData object")
 	
 	class(x) <- "gmaData"
@@ -38,7 +38,7 @@ gmaData.print <- function(x){
 
 #' This creates a gmaData structure from user supplied dataframes
 #' 
-#' @param baseline the baseline individuals to use to infer relationships. The first column should
+#' @param baseline a dataframe of the baseline individuals to use to infer relationships. The first column should
 #'   be the population each individual is from. The second column is the individual's identifier.
 #'   Following columns are genotypes, with columns 3 adn 4 being Allele1 and 2 for locus 1, columns
 #'   5 and 6 beign locus 2, ... This is a "two column per call" type of organization. Genotypes 
@@ -46,11 +46,18 @@ gmaData.print <- function(x){
 #'   microhaplotype alleles are "ACA", "AAD", "CTCTGGA". Some SNP alleles (which are just microhaplotypes
 #'   with a length of one base) are "A", "G", "D". In these examples, deletions are represented by "D". Missing genotypes
 #'   should be NA.
-#' @param mixture the mixture individuals to infer relationships for. The first column  is the individual's identifier.
+#' @param mixture a dataframe of the mixture individuals to infer relationships for. The first column  is the individual's identifier.
 #'   Following columns are genotypes, in the same manner as for \code{baseline}. The order and column names of the loci 
 #'   must be the same in both the baseline and mixture dataframes.
-#' @param unsampliedPops
-#' @param perSNPerror list of length equal to number of loci. Each entry is vector of error rates for each SNP in a locus.
+#' @param unsampledPops a dataframe of the individuals sampled from the "unsampled populations" used to estimate allele frequencies 
+#'   in these populations. See details for more explanation. Column 1 has the baseline population that an individual corresponds to, 
+#'   column 2 is the individual's identifier
+#'   (not currently used, but must be present). The following columns are genotypes, in the same manner as for \code{baseline}. 
+#'   The order and column names of the loci must be the same as in the baseline and mixture dataframes.
+#' @param perSNPerror dataframe with each row representing a SNP. Column 1 is the locus name, column 2 is the order 
+#'   of the SNP in the locus (ie 1, 2, 3, ...), column 3 is the number of alleles at that SNP (not the locus as a whole),
+#'   and column 4 is the error rate (probability of observing any allele other than the correct allele at that SNP - not the 
+#'   locus as a whole).
 #' @param dropoutProb dataframe with column 1 being locus name, column 2 being allele, and column 3 being dropout probability.
 #'   the locus name must be the column name of allele 1 for the corresponding locus in the baseline and mixture dataframes
 #' @importFrom Rcpp evalCpp
@@ -68,48 +75,69 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		warning("Coercing mixture to a dataframe")
 		mixture <- as.data.frame(mixture)
 	}
+	if(!is.null(unsampledPops) && is.na(unsampledPops)) unsampledPops <- NULL
+	useUnsamp <- !is.null(unsampledPops)
+	if (useUnsamp & is.data.frame(unsampledPops)){
+		warning("Coercing mixture to a dataframe")
+		unsampledPops <- as.data.frame(unsampledPops)
+	}
 	
-	# check that if one is NA, all are NA
+	# check that if one is NA, all are NA?
 	
 	# first, get names of all markers
 	markers <- colnames(baseline)[seq(3, (ncol(baseline) - 1), 2)]
 	markersMix <- colnames(mixture)[seq(2, (ncol(mixture) - 1), 2)]
 	if(markers != markersMix) stop("error, the loci are either not the same or not in the same order between the baseline and mixture.")
-	if(names(perSNPerror) != markers){
-		warning("reorering perSNPerror to match the order of the markers in baseline and mixture")
-		perSNPerror <- perSNPerror[markers]
+	if(any(!(markers %in% perSNPerror[,1]))) stop("not all markers have entries in perSNPerror")
+	if(any(perSNPerror[,3] < 2)) stop("all SNPs in perSNPerror must have 2 or more alleles")
+	if(useUnsamp){
+		markersUnsamp <- colnames(unsampledPops)[seq(3, (ncol(unsampledPops) - 1), 2)]
+		if(markers != markersUnsamp) stop("error, the loci are either not the same or not in the same order between the baseline and unsampledPops.")
 	}
 	
-	
+	# set up storage
+	genotypeErrorList <- list()
+	genotypeKeyList <- list()
 	
 	# now, for each locus
 	for(m in seq(3, (ncol(baseline) - 1), 2)){
+		### lots of nested for loops.....
+		###  may have to move some/all of this to c++
+		mName <- colnames(baseline)[m]
+		# add default options for perSNPerror and dropoutProb ??
 		
-		# add default options for perSNPerror and dropoutProb
+		tempPerSNPerror <- perSNPerror[perSNPerror[,1] == mName,]
+		tempPerSNPerror <- tempPerSNPerror[order(tempPerSNPerror[,2]),]
 		
 		# get all alleles
 		alleles <- sort(unique(c(baseline[,m], baseline[,m+1], mixture[,m-1], mixture[,m])))
+		if(useUnsamp) alleles <- sort(unique(c(alleles, unsampledPops[,m], unsampledPops[,m+1])))
 		alleles <- alleles[!is.na(alleles)]
 		lenLocus <- unique(nchar(alleles))
-		if(length(lenLocus) != 1) stop("not all alleles are the same length for locus ", colnames(baseline)[m])
-		if(lenLocus != length(perSNPerror[[((m-1)/2)]])) stop("not all SNPs have error rates for locus ", colnames(baseline)[m])
+		if(length(lenLocus) != 1) stop("not all alleles are the same length for locus ", mName)
+		if(lenLocus != nrow(tempPerSNPerror)) stop("not all SNPs have error rates for locus ", mName)
 		
 		numAlleles <- length(alleles)
 		# assign ints to each allele
 		alleleKey <- data.frame(alleles = alleles, intAlleles = 1:numAlleles) # dataframe b/c combining char and num vectors
 		
-		#recode genotypes
+		# recode alleles
 		baseline[,m] <- recodeAlleles(baseline[,m], alleleKey)
 		baseline[,m+1] <- recodeAlleles(baseline[,m+1], alleleKey)
 		mixture[,m-1] <- recodeAlleles(mixture[,m-1], alleleKey)
 		mixture[,m] <- recodeAlleles(mixture[,m], alleleKey)
-		#flip alleles to all be consistent
+		# flip alleles to all be consistent
 		baseline[,m:(m+1)] <- flipHets(baseline[,m:(m+1)])
 		mixture[,(m-1):m] <- flipHets(mixture[,(m-1):m])
 		
-		#recode dropoutProb
+		# recode dropoutProb
 		tempDropoutProb <- dropoutProb[dropoutProb[,1] == colnames(baseline)[m],]
 		tempDropoutProb[,2] <- recodeAlleles(tempDropoutProb[,2], alleleKey)
+		
+		# check that no two dropout rates sum to greater than 1
+		# this would violate assumption that dropouts are disjoint
+		if(checkSums(tempDropoutProb[,3])) stop("two dropout probabilities for locus ", mName, " sum to greater than 1.",
+															 " this violates the assumption that dropouts are disjoint.")
 		
 		# calc per allele error rates
 		alleleErr <- matrix(nrow = numAlleles, ncol = numAlleles)
@@ -118,9 +146,9 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 				tempErr <- 1
 				for(c in 1:lenLocus){
 					if(substr(alleles[i],c,c) != substr(alleles[j],c,c)){
-						tempErr <- tempErr * perSNPerror[[((m-1)/2)]][c]
+						tempErr <- tempErr * tempPerSNPerror[c,4] / (tempPerSNPerror[c,3] - 1)
 					} else {
-						tempErr <- tempErr * (1 - perSNPerror[[((m-1)/2)]][c])
+						tempErr <- tempErr * (1 - tempPerSNPerror[c,4])
 					}
 				}
 				
@@ -128,17 +156,10 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 				alleleErr[j,i] <- tempErr
 			}
 		}
-		diag(alleleErr) <- prod(1 - perSNPerror[[((m-1)/2)]])
+		diag(alleleErr) <- prod(1 - tempPerSNPerror[,4])
 
 		# now per genotype error rates
-		# general models:
-		# for a true heterozygote, AB: 
-		#  P(CD|AB) = P(dropout of A) * P(CD|AA) + P(dropout of B) * P(CD|BB) +  P(CD|AB, no dropout)
-		# where,
-		#  P(CD|AB, no dropout) = (1 - P(dropout of A) - P(dropout of B)) * (P(A obs as C) * P(B obs as D) + P(A obs as D) * P(B obs as C).
-		# for a true homozygote, AA:
-		#  P(CD|AA) = P(A obs as C) * P(A obs as D) * 2
-		
+
 		# assign ints to each genotype
 		genotypeKey <- matrix(0,0,2)
 		for(i in 1:numAlleles){ #build all combinations
@@ -167,12 +188,8 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 				}
 			}
 		}
+
 		# then calculate for true heterozygotes
-		
-		############
-		## something messed up here
-		############
-		
 		for(i in which(genotypeKey[,1] != genotypeKey[,2])){ #for each true genotype
 			for(j in 1:nrow(genotypeKey)){ #for each possible observed genotype
 				trueA <- genotypeKey[i,1]
@@ -180,14 +197,18 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 				obsC <- genotypeKey[j,1]
 				obsD <- genotypeKey[j,2]
 				
+				#prob of no dropout
+				PnoDropout <- 1 - tempDropoutProb[tempDropoutProb[,2] == trueA,3] - tempDropoutProb[tempDropoutProb[,2] == trueB,3]
+				
 				if(obsC == obsD && (obsC == trueA || obsC == trueB)){
 					# 	P(AA|AB, no dropout) = (1 - P(dropout of A) - P(dropout of B)) * (P(A obs as A) * P(B obs as C)
-					PnoDropout <- (1 - tempDropoutProb[tempDropoutProb[,2] == trueA,3] - tempDropoutProb[tempDropoutProb[,2] == trueB,3]) *
-						(alleleErr[trueA,obsC] * alleleErr[trueB,obsD])
+					PnoDropout <- PnoDropout * alleleErr[trueA,obsC] * alleleErr[trueB,obsD]
+				} else if (obsC == obsD && obsC != trueA && obsC != trueB) {
+					# P(AA|BC, no dropout) =  (1 - P(dropout of A) - P(dropout of B)) * P(B obs as A) * P(C obs as A)
+					PnoDropout <- PnoDropout * alleleErr[trueA,obsC] * alleleErr[trueB,obsD]
 				} else {
 					# P(CD|AB, no dropout) = (1 - P(dropout of A) - P(dropout of B)) * (P(A obs as C) * P(B obs as D) + P(A obs as D) * P(B obs as C)
-					PnoDropout <- (1 - tempDropoutProb[tempDropoutProb[,2] == trueA,3] - tempDropoutProb[tempDropoutProb[,2] == trueB,3]) *
-						(alleleErr[trueA,obsC] * alleleErr[trueB,obsD] + alleleErr[trueA,obsD] * alleleErr[trueB,obsC])
+					PnoDropout <- PnoDropout * (alleleErr[trueA,obsC] * alleleErr[trueB,obsD] + alleleErr[trueA,obsD] * alleleErr[trueB,obsC])
 				}
 
 			
@@ -201,22 +222,47 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		}
 		}
 		
-		#testing
-		return(genoErr)
-		
+		# check sums and issue warning about alleles if pertinent
+		if(!all.equal(rowSums(genoErr), rep(1, nrow(genoErr)))) warning("Not all observed genotype probabilities sum to 1 at locus", mName, 
+				". This can happen when the number of alleles observed at a SNP in the data do not match the number of SNPs given ",
+				"in perSNPerror. If it is simply because some known alleles were not observed in this population, this warning can probably be ignored.")
 		
 		#recode genotypes
+		baseline[,m] <- recodeGenotypes(baseline[,m:(m+1)], genotypeKey)
+		mixture[,m-1] <- recodeGenotypes(mixture[,(m-1):m], genotypeKey)
+		if(useUnsamp){
+			unsampledPops[,m] <- recodeAlleles(unsampledPops[,m], alleleKey)
+			unsampledPops[,m+1] <- recodeAlleles(unsampledPops[,m+1], alleleKey)
+			unsampledPops[,m:(m+1)] <- flipHets(unsampledPops[,m:(m+1)])
+			unsampledPops[,m] <- recodeGenotypes(unsampledPops[,m:(m+1)], genotypeKey)
+		}
 		
-		### lots of nested for loops.....
-		###  may have to move some/all of this to c++
+		# recode genotypeKey
+		genotypeKey <- data.frame(genotypeCode = 1:nrow(genotypeKey),
+										  allele1 = alleleKey[genotypeKey[,1],1],
+										  allele2 = alleleKey[genotypeKey[,2],1], stringsAsFactors = FALSE)
+		# add row and column names to genoErr for human readability
+		rownames(genoErr) <- paste0(genotypeKey$allele1, "/", genotypeKey$allele2)
+		colnames(genoErr) <- rownames(genoErr)
 		
-				
-		# recode genotypes
-		newBase <- baseline[,i:(i+1)]
-		newMix <- mixture[,(i-1):i]
-		
+		# store results
+		genotypeErrorList[[mName]] <- genoErr
+		genotypeKeyList[[mName]] <- genotypeKey
 
-		
-	}
+	} # end for each locus
 	
+	# drop alleles and keep genotype codes
+	baseline <- baseline[,c(1, 2, seq(3, (ncol(baseline) - 1), 2))]
+	mixture <- mixture[,c(1, seq(2, (ncol(mixture) - 1), 2))]
+	if(useUnsamp) unsampledPops <- unsampledPops[,c(1, 2, seq(3, (ncol(baseline) - 1), 2))]
+	
+	gmaData <- list(
+		baseline = baseline,
+		mixture = mixture,
+		unsampledPops = unsampledPops,
+		genotypeErrorRates = genotypeErrorList,
+		genotypeKeys = genotypeKeyList
+	)
+	
+	return(construct_grandma(gmaData))
 }

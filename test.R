@@ -438,6 +438,9 @@ logDirichMultPMF(c(1,0,1,0,0), c(10000,10,10,10,10))
 
 testData <- read.csv("all_sockeye_BCB.txt", sep = "\t", stringsAsFactors = FALSE)
 testData <- testData[testData$Pedigree == "OneEAGL14BCB",]
+
+save(testData, file = "testDataFilter.rda") #saving for upload to github for access elswhere
+
 genos <- testData[,28:ncol(testData)]
 base <- genos[,1]
 base[base == "00"] <- NA
@@ -445,32 +448,41 @@ base2 <- as.data.frame(cbind("pop", paste0("indiv", 1:length(base)), substr(base
 colnames(base2) <- c("population", "id", "locus1", "locus1.A2")
 dropout <- data.frame(locus = "locus1", allele = c("A", "B"), dropoutRate = .01, stringsAsFactors = FALSE)
 # dropout <- data.frame(locus = "locus1", allele = c("A", "B"), dropoutRate = 0, stringsAsFactors = FALSE)
+snpError <- data.frame(locus = "locus1", order = 1, numBases = 2, error = .005, stringsAsFactors = FALSE)
 
 #SNP
-createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = .005, dropoutProb = dropout)
+createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
 
 #microhap
 base2$locus1[!is.na(base2$locus1)] <- paste0(base2$locus1[!is.na(base2$locus1)], sample(c("C", "G"), sum(!is.na(base2$locus1)), replace = TRUE))
 base2$locus1.A2[!is.na(base2$locus1)] <- paste0(base2$locus1.A2[!is.na(base2$locus1)], sample(c("C", "G"), sum(!is.na(base2$locus1)), replace = TRUE))
 uAllele <- unique(na.omit(c(base2$locus1, base2$locus1.A2)))
-dropout <- data.frame(locus = "locus1", allele = uAllele, dropoutRate = 0.01, stringsAsFactors = FALSE)
-snpError <- list(locus1 = c(.05, .05))
-snpError <- list(locus1 = c(.005, .005, .005))
+dropout <- data.frame(locus = "locus1", allele = uAllele, dropoutRate = .01, stringsAsFactors = FALSE)
+snpError <- data.frame(locus = "locus1", order = 1:unique(nchar(uAllele)), numBases = 2, error = .005, stringsAsFactors = FALSE)
 
-createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+# createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
 rowSums(createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout))
 
+base2$locus1[!is.na(base2$locus1)] <- paste0(base2$locus1[!is.na(base2$locus1)], sample(c("C", "G", "T"), sum(!is.na(base2$locus1)), replace = TRUE))
+base2$locus1.A2[!is.na(base2$locus1)] <- paste0(base2$locus1.A2[!is.na(base2$locus1)], sample(c("C", "G", "T"), sum(!is.na(base2$locus1)), replace = TRUE))
+uAllele <- unique(na.omit(c(base2$locus1, base2$locus1.A2)))
+dropout <- data.frame(locus = "locus1", allele = uAllele, dropoutRate = .01, stringsAsFactors = FALSE)
+snpError <- data.frame(locus = "locus1", order = 1:unique(nchar(uAllele)), numBases = c(2,2,3), error = .005, stringsAsFactors = FALSE)
 
+# createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+rowSums(createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout))
 
+test <- createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
 
+head(test$baseline)
+head(test$mixture)
+test$unsampledPops
+test$genotypeErrorRates
+rownames(test$genotypeErrorRates[[1]])
 
+test$genotypeKeys
 
-
-
-
-
-
-
+base2[base2,]
 
 
 
