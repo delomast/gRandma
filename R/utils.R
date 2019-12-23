@@ -113,3 +113,14 @@ recodeGenotypes <- function(genotypes, key){
 	
 	return(newGenotypes)
 }
+
+#' count number of each allele to derive Dirichlet posterior
+#' @param genotypes dataframe with allele1 in column 1 and allele 2 in column 2, missing as NA
+#' @param alleles list of alleles to count
+#' @keywords internal
+#' @noRd
+countAlleles <- function(genotypes, alleles){
+	counts <- as.vector(table(c(genotypes[,1], genotypes[,2]), useNA = "no")[alleles])
+	counts[is.na(counts)] <- 0
+	return(counts)
+}

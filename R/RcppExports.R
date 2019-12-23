@@ -9,7 +9,12 @@
 #' @keywords internal
 NULL
 
-logBetaBinomPMF <- function(n, k, a, b) {
-    .Call(`_gRandma_logBetaBinomPMF`, n, k, a, b)
+#' calculating llr of single-sided grandparent pair vs unrelated
+#' returning a matrix of descendent, grandparentPopulation, grandparent1, grandparent2, llr
+#' @keywords internal
+#' @noRd
+#' @export
+ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, useUnsamp = FALSE) {
+    .Call(`_gRandma_ssGP`, baseline, mixture, crossRecords, baselineParams, unsampledPopParams, useUnsamp)
 }
 

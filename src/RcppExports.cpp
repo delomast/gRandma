@@ -5,23 +5,25 @@
 
 using namespace Rcpp;
 
-// logBetaBinomPMF
-double logBetaBinomPMF(double n, double k, double a, double b);
-RcppExport SEXP _gRandma_logBetaBinomPMF(SEXP nSEXP, SEXP kSEXP, SEXP aSEXP, SEXP bSEXP) {
+// ssGP
+Rcpp::NumericMatrix ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, bool useUnsamp);
+RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP useUnsampSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< double >::type n(nSEXP);
-    Rcpp::traits::input_parameter< double >::type k(kSEXP);
-    Rcpp::traits::input_parameter< double >::type a(aSEXP);
-    Rcpp::traits::input_parameter< double >::type b(bSEXP);
-    rcpp_result_gen = Rcpp::wrap(logBetaBinomPMF(n, k, a, b));
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type baseline(baselineSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type mixture(mixtureSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type crossRecords(crossRecordsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
+    Rcpp::traits::input_parameter< bool >::type useUnsamp(useUnsampSEXP);
+    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, useUnsamp));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gRandma_logBetaBinomPMF", (DL_FUNC) &_gRandma_logBetaBinomPMF, 4},
+    {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 6},
     {NULL, NULL, 0}
 };
 

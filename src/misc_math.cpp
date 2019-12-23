@@ -1,5 +1,6 @@
 #include <Rcpp.h>
 #include <math.h>
+#include <vector>
 
 using namespace std;
 
@@ -28,7 +29,23 @@ double logDirichMultPMF(vector <double> k, vector <double> a){
 	return dens;
 }
 
+vector <vector <int> > listAllPairs(vector <int> allInds){
+	vector <vector <int> > out;
+	vector <int> tempVec;
+	tempVec.push_back(-9);
+	tempVec.push_back(-9);
+	for(int i = 0, max = allInds.size() - 1; i < max; i++){
+		for(int j = i+1, max2 = allInds.size(); j < max2; j++){
+			tempVec[0] = allInds[i];
+			tempVec[1] = allInds[j];
+			out.push_back(tempVec);
+		}
+	}
+	return out;
+}
 
+
+/*
 
 // wrote these and then remembered want to make this work for both
 //  SNPs and microhaplotypes, keeping them in for now in case they
@@ -49,3 +66,4 @@ double logChoose(double n, double k){
 double logBetaBinomPMF(double n, double k, double a, double b){
 	return logChoose(n, k) + logBeta(k + a, n - k + b) - logBeta(a, b);
 }
+*/

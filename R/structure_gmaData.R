@@ -20,7 +20,7 @@
 construct_grandma <- function(x){
 
 	# do some checking here of required values
-	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys")
+	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys", "baselineParams", "unsampledPopsParams")
 	if(sum(names(x) != gmaDataNames) > 0) stop("Wrong names to make a gmaData object")
 	
 	class(x) <- "gmaData"
@@ -28,11 +28,21 @@ construct_grandma <- function(x){
 }
 
 #' print method for gmaData
-gmaData.print <- function(x){
-	cat("\nclass of gmaData with\n")
-	
-	#some more here
-	
+print.gmaData <- function(x){
+	cat("\ngmaData object with\n")
+	cat(length(unique(x$baseline[,1])), " baseline population(s)\n")
+	if(is.null(x$unsampledPops)){
+		cat("No unsampledPops\n")
+	} else{
+		cat(length(unique(x$unsampledPops[,1])), " unsampled population(s)\n")
+	}
+	cat(nrow(x$mixture), " mixture individuals\n")
+	cat(length(x$genotypeErrorRates), " loci\n")
+	cat("The number of loci by number of unique alleles is:\n")
+	print(table(sapply(x$genotypeKeys, function(y){
+		return(length(unique(y[,2])))
+	})))
+	cat("\n\n")
 	
 }
 
@@ -96,8 +106,19 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 	}
 	
 	# set up storage
-	genotypeErrorList <- list()
-	genotypeKeyList <- list()
+	genotypeErrorList <- list() # list of matrices giving P(obs geno | true geno) for each locus
+	genotypeKeyList <- list() # key of genotype code and alleles for each locus
+	baselineParams <- list() # list, entry for each population, of lists, for each locus, a named vector giving Dirichlet posterior of
+		# allele frequencies given a 1/N prior, N = number of alleles
+	unsampledPopsParams <- list() # same as baselineParams, but for unsampledPops
+	
+	# initiate storage for different pops
+	basePops <- unique(baseline[,1])
+	for(p in basePops) baselineParams[[p]] <- list()
+	if(useUnsamp){
+		unsamPops <- unique(unsampledPops[,1])
+		for(p in unsamPops) unsampledPopsParams[[p]] <- list()
+	}
 	
 	# now, for each locus
 	for(m in seq(3, (ncol(baseline) - 1), 2)){
@@ -177,8 +198,7 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 				trueA <- genotypeKey[i,1]
 				obsC <- genotypeKey[j,1]
 				obsD <- genotypeKey[j,2]
-			
-				
+
 				if(obsC != obsD){
 					# 2 * P(A obs as C) * P(A obs as D)
 					genoErr[i,j] <- 2 * alleleErr[trueA,obsC] * alleleErr[trueA,obsD]
@@ -211,8 +231,6 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 					PnoDropout <- PnoDropout * (alleleErr[trueA,obsC] * alleleErr[trueB,obsD] + alleleErr[trueA,obsD] * alleleErr[trueB,obsC])
 				}
 
-			
-
 				trueAA <- which(genotypeKey[,1] == trueA & genotypeKey[,2] == trueA)
 				trueBB <- which(genotypeKey[,1] == trueB & genotypeKey[,2] == trueB)
 				# P(CD|AB) = P(dropout of A) * P(CD|BB) + P(dropout of B) * P(CD|AA) +  P(CD|AB, no dropout)
@@ -226,6 +244,18 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		if(!all.equal(rowSums(genoErr), rep(1, nrow(genoErr)))) warning("Not all observed genotype probabilities sum to 1 at locus", mName, 
 				". This can happen when the number of alleles observed at a SNP in the data do not match the number of SNPs given ",
 				"in perSNPerror. If it is simply because some known alleles were not observed in this population, this warning can probably be ignored.")
+		
+		# paramaters of Dirichlet posterior for allele frequency
+		for(p in basePops){
+			baselineParams[[p]][[mName]] <- countAlleles(baseline[,m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
+			names(baselineParams[[p]][[mName]]) <- alleleKey[,1]
+		}
+		if(useUnsamp){
+			for(p in unsamPops){
+				unsampledPopsParams[[p]][[mName]] <- countAlleles(unsampledPops[,m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
+				names(unsampledPopsParams[[p]][[mName]]) <- alleleKey[,1]
+			}
+		}
 		
 		#recode genotypes
 		baseline[,m] <- recodeGenotypes(baseline[,m:(m+1)], genotypeKey)
@@ -254,14 +284,20 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 	# drop alleles and keep genotype codes
 	baseline <- baseline[,c(1, 2, seq(3, (ncol(baseline) - 1), 2))]
 	mixture <- mixture[,c(1, seq(2, (ncol(mixture) - 1), 2))]
-	if(useUnsamp) unsampledPops <- unsampledPops[,c(1, 2, seq(3, (ncol(baseline) - 1), 2))]
+	if(useUnsamp) {
+		unsampledPops <- unsampledPops[,c(1, 2, seq(3, (ncol(baseline) - 1), 2))]
+	} else {
+		unsampledPopsParams <- NULL
+	}
 	
 	gmaData <- list(
 		baseline = baseline,
 		mixture = mixture,
-		unsampledPops = unsampledPops,
+		unsampledPops = unsampledPops, # returning unsampled Pops, but don't have a use for it right now
 		genotypeErrorRates = genotypeErrorList,
-		genotypeKeys = genotypeKeyList
+		genotypeKeys = genotypeKeyList,
+		baselineParams = baselineParams,
+		unsampledPopsParams = unsampledPopsParams
 	)
 	
 	return(construct_grandma(gmaData))

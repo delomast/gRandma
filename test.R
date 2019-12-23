@@ -441,6 +441,9 @@ testData <- testData[testData$Pedigree == "OneEAGL14BCB",]
 
 save(testData, file = "testDataFilter.rda") #saving for upload to github for access elswhere
 
+
+load("testDataFilter.rda")
+
 genos <- testData[,28:ncol(testData)]
 base <- genos[,1]
 base[base == "00"] <- NA
@@ -460,8 +463,6 @@ uAllele <- unique(na.omit(c(base2$locus1, base2$locus1.A2)))
 dropout <- data.frame(locus = "locus1", allele = uAllele, dropoutRate = .01, stringsAsFactors = FALSE)
 snpError <- data.frame(locus = "locus1", order = 1:unique(nchar(uAllele)), numBases = 2, error = .005, stringsAsFactors = FALSE)
 
-# createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
-rowSums(createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout))
 
 base2$locus1[!is.na(base2$locus1)] <- paste0(base2$locus1[!is.na(base2$locus1)], sample(c("C", "G", "T"), sum(!is.na(base2$locus1)), replace = TRUE))
 base2$locus1.A2[!is.na(base2$locus1)] <- paste0(base2$locus1.A2[!is.na(base2$locus1)], sample(c("C", "G", "T"), sum(!is.na(base2$locus1)), replace = TRUE))
@@ -469,25 +470,33 @@ uAllele <- unique(na.omit(c(base2$locus1, base2$locus1.A2)))
 dropout <- data.frame(locus = "locus1", allele = uAllele, dropoutRate = .01, stringsAsFactors = FALSE)
 snpError <- data.frame(locus = "locus1", order = 1:unique(nchar(uAllele)), numBases = c(2,2,3), error = .005, stringsAsFactors = FALSE)
 
-# createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
-rowSums(createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout))
 
 test <- createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+
+str(test)
 
 head(test$baseline)
 head(test$mixture)
 test$unsampledPops
 test$genotypeErrorRates
 rownames(test$genotypeErrorRates[[1]])
-
+rowSums(test$genotypeErrorRates[[1]])
 test$genotypeKeys
+test$baselineParams
+test$unsampledPopsParams
 
-base2[base2,]
+test
+matrix("pop", 3, 3)
 
+ssGP(test, matrix("pop", 3, 3), FALSE)
+baseline <- data.frame(a = 0, b = 1:4, c = 1:4, d = 1:4)
 
-
-
-
+ssGP(baseline = as.matrix(baseline), 
+	  mixture = matrix(1,4,4), 
+		crossRecords = matrix(0,0,0), 
+		baselineParams = list(c(1)),
+		unsampledPopParams = list(), 
+		)
 
 
 
