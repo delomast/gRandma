@@ -120,7 +120,7 @@ recodeGenotypes <- function(genotypes, key){
 #' @keywords internal
 #' @noRd
 countAlleles <- function(genotypes, alleles){
-	counts <- as.vector(table(c(genotypes[,1], genotypes[,2]), useNA = "no")[alleles])
+	counts <- as.vector(table(c(genotypes[,1], genotypes[,2]), useNA = "no")[as.character(alleles)])
 	counts[is.na(counts)] <- 0
 	return(counts)
 }
