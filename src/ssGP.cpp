@@ -16,34 +16,109 @@ using namespace std;
 //' @noRd
 //' @export
 // [[Rcpp::export]]
-Rcpp::NumericMatrix ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, 
+int ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, 
                            Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams,
-                           Rcpp::List unsampledPopParams, Rcpp::NumericMatrix genotypeKey
+                           Rcpp::List unsampledPopParams, Rcpp::List genotypeKey
                            ){
-	// determine if unsampledPops used or not
+
+	// determine if cross records used or not
 	bool useCR = true;
 	if(crossRecords.nrow() == 0) useCR = false;
 	
+	// first, turn all inputs into non-Rcpp c++ classes
+	// here, making vectors with rows each being a vector of ints
+	vector <vector <int> > baselineC;
+	baselineC = rcppMatrixToVectorInt(baseline);
+	
+	vector <vector <int> > mixtureC;
+	baselineC = rcppMatrixToVectorInt(mixture);
+	
+	vector <vector <int> > crossRecordsC;
+	if(useCR) crossRecordsC = rcppMatrixToVectorInt(crossRecords);
+	
+
+	vector <vector <vector <double> > > baselineParamsC; //first index is pop, then locus, then allele
+	for(int i = 0, max = baselineParams.length(); i < max; i++){
+		baselineParamsC.push_back(rcppListToVectorDouble(baselineParams[i]));
+	}
+
+	vector <vector <vector <double> > > unsampledPopParamsC; //first index is pop, then locus, then allele
+	for(int i = 0, max = unsampledPopParams.length(); i < max; i++){
+		unsampledPopParamsC.push_back(rcppListToVectorDouble(unsampledPopParams[i]));
+	}
+
+	vector <vector <vector <int> > > genotypeKeyC; //first index is locus, then genotype, values are alleles
+	genotypeKeyC = convertGenotypeKey(genotypeKey);
+	
+
 	// calculate number of MI allowed to consider a pair of potential grandparents
-	double miLimit = (baseline.ncol() - 2) * .05; // this is just a placeholder for initial testing
+	double miLimit = (baselineC[0].size() - 2) * .05; // this is just a placeholder for initial testing
+
 	
-	// get number of baseline populations
-	int countPops = baselineParams.length();
+		
+	// calculate genotype likelihoods from parent - parent - offspring relationship
+	// the same for all baseline pops b/c based on mendelian inheritance
+	/*	For lGenos_ppo:
+	 	Index 1 is locus
+	 	Index 2 is parent1 genotype
+		Index 3 is parent 2 genotype
+		Index 4 is offspring genotype
+		Value is likelihood
+	 */
+	vector <vector <vector <vector <double> > > > lGenos_ppo;
 	
-	// make map of baseline individuals and their genotypes - or just the row of the matrix they are in
-	//  actually, probably don't need to if individual identifier is their row number
-	//
-	//
-	//
+	// initialize with 0's
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ //for each locus
+		vector <vector <vector <double> > > tempLocus;
+		for(int p1 = 0, max2 = genotypeKeyC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			vector <vector <double> > tempP1;
+			for(int p2 = 0; p2 < max2; p2++){ //for each p2 genotype
+				vector <double> tempP2 (max2,0.0);
+				tempP1.push_back(tempP2);
+			}
+			tempLocus.push_back(tempP1);
+		}
+		lGenos_ppo.push_back(tempLocus);
+	}
+
+	// now calculate likelihoods
+	
+	//something messed up here?
+	
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ //for each locus
+		for(int p1 = 0, max2 = genotypeKeyC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			for(int p2 = p1; p2 < max2; p2++){ //for each p2 genotype
+				for(int o = 0; o < max2; o++){ //for each offspring genotype
+					lGenos_ppo[i][p1][p2][o] = ppoMendelian(genotypeKeyC[i][p1], genotypeKeyC[i][p2], genotypeKeyC[i][o]);
+					if(p1 != p2) lGenos_ppo[i][p2][p1][o] = lGenos_ppo[i][p1][p2][o];
+				}
+			}
+		}
+	}
+
+//testing
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ //for each locus
+		for(int p1 = 0, max2 = genotypeKeyC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			for(int p2 = 0; p2 < max2; p2++){ //for each p2 genotype
+				for(int o = 0; o < max2; o++){ //for each offspring genotype
+					cout<<genotypeKeyC[i][p1][0]<<" "<<genotypeKeyC[i][p1][1]<<" "<<genotypeKeyC[i][p2][0]<<" "<<genotypeKeyC[i][p2][1]<<" "<<genotypeKeyC[i][o][0]<<" "<<genotypeKeyC[i][o][1]<<endl;
+					cout<<lGenos_ppo[i][p1][p2][o]<<endl;
+					cout<<lGenos_ppo[i][p2][p1][o]<<endl;
+				}
+			}
+		}
+	}
+	
+return 1;
 	
 	// for each baseline pop
-	for(int pop = 0, maxP = countPops; pop < maxP; pop++){
+	for(int pop = 0, maxP = baselineParamsC.size(); pop < maxP; pop++){
 		// check if cross records present
 		bool useCRpop = false;
 		if (useCR){
 			// check that cross records contain records for the current population
-			for(int i = 0, max = crossRecords.nrow(); i < max; i++){
-				if(crossRecords(i,0) == pop){
+			for(int i = 0, max = crossRecordsC.size(); i < max; i++){
+				if(crossRecordsC[i][0] == pop){
 					useCRpop = true;
 					break;
 				}
@@ -52,38 +127,49 @@ Rcpp::NumericMatrix ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixtu
 		
 		// either get cross records, or make a list of all possible pairs
 		vector <vector <int> > pairs; //all pairs to consider
-		vector <int> tempVec;
-		tempVec.push_back(-9);
-		tempVec.push_back(-9);
 		if(useCR){
-			for(int i = 0, max = crossRecords.nrow(); i < max; i++){
-				if(crossRecords(i,0) == pop){
-					tempVec[0] = crossRecords(i,1);
-					tempVec[1] = crossRecords(i,2);
+			vector <int> tempVec (2,-9);
+			for(int i = 0, max = crossRecordsC.size(); i < max; i++){
+				if(crossRecordsC[i][0] == pop){
+					tempVec[0] = crossRecordsC[i][1];
+					tempVec[1] = crossRecordsC[i][2];
 					pairs.push_back(tempVec);
 				}
 			}
 		} else {
 			vector <int> baseInds;
-			for(int i=0, max = baseline.nrow(); i < max; i++) {
-				if(baseline(i,0) == pop) baseInds.push_back(baseline(i,1));
+			for(int i=0, max = baselineC.size(); i < max; i++) {
+				if(baselineC[i][0] == pop) baseInds.push_back(baselineC[i][1]);
 			}
-			
 			pairs = listAllPairs(baseInds);
 		}
 		
-		// testing
-		Rcpp::NumericMatrix out(pairs.size(), 2);
-		for(int i = 0, max = pairs.size(); i < max; i++){
-			out(i,0) = pairs[i][0];
-			out(i,1) = pairs[i][1];
+
+		// calculate genotype likelihoods from random sampled genotype
+		vector <vector <double> > lGenos_base; // one vector for each locus
+		vector <vector <double> > lGenos_unsamp; 
+
+		for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ // for each locus
+			// baselineParamsC[pop][i] are the alpha values for the baseline pop
+			// unsampledPopParamsC[pop][i] are the alpha values for the corresponding unsampled pop
+			// genotypeKeyC[i] is the key for the locus i
+			vector <double> tempBase;
+			vector <double> tempUnsamp;
+			for(int j = 0, max2 = genotypeKeyC[i].size(); j < max2; j++){ // for each genotype
+				vector <double> k (baselineParamsC[pop][i].size(), 0);
+				for(int l = 0, max3 = baselineParamsC[pop][i].size(); l < max3; l++){
+					if(genotypeKeyC[i][j][0] == l) k[l]++;
+					if(genotypeKeyC[i][j][1] == l) k[l]++;
+				}
+				tempBase.push_back(logDirichMultPMF(k, baselineParamsC[pop][i]));
+				tempUnsamp.push_back(logDirichMultPMF(k, unsampledPopParamsC[pop][i]));
+			}
+			lGenos_base.push_back(tempBase);
+			lGenos_unsamp.push_back(tempUnsamp);
 		}
-		return out;
-		// end testing
-				
-		// calculate genotype likelihoods
-		//  first from sampling
-		//  then from parent - parent - offspring relationship
+
+		
+		
 		
 		// for each individual in the mixture
 			// filter pairs based on MI
@@ -106,4 +192,8 @@ Rcpp::NumericMatrix ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixtu
 //                                                    Rcpp::Named("llr") = 0
 // 																	);
 // 	return results;
+ 
+ 
+
+	return 1;
 }

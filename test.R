@@ -474,7 +474,7 @@ snpError <- data.frame(locus = "locus1", order = 1:unique(nchar(uAllele)), numBa
 test <- createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
 
 str(test)
-
+table(test$baseline$locus1)
 head(test$baseline)
 head(test$mixture)
 test$unsampledPops
@@ -484,32 +484,24 @@ rowSums(test$genotypeErrorRates[[1]])
 test$genotypeKeys
 test$baselineParams
 test$unsampledPopsParams
+test$alleleKeys
 
 test
-matrix("pop", 3, 3)
 
-ssGP(test, matrix("pop", 3, 3), FALSE)
-baseline <- data.frame(a = 0, b = 1:4, c = 1:4, d = 1:4)
-
-ssGP(baseline = as.matrix(baseline), 
-	  mixture = matrix(1,4,4), 
-		crossRecords = matrix(0,0,0), 
-		baselineParams = list(c(1)),
-		unsampledPopParams = list(), 
-		)
+inferGrandma(test, "ssGP")
 
 
 
 
+Rcpp::cppFunction("int testCpp(int b){
+int a = 5;			 
+for(int i=0; i<a; i++) std::cout<<b<<std::endl;
+return 0;
+}
+			 ")
+
+testCpp(12323)
 
 
-
-
-
-
-
-
-
-
-
+Rcpp::evalCpp("false + !false")
 

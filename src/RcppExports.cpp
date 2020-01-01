@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // ssGP
-Rcpp::NumericMatrix ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, bool useUnsamp);
-RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP useUnsampSEXP) {
+int ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey);
+RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -16,8 +16,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type crossRecords(crossRecordsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
-    Rcpp::traits::input_parameter< bool >::type useUnsamp(useUnsampSEXP);
-    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, useUnsamp));
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
+    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey));
     return rcpp_result_gen;
 END_RCPP
 }

@@ -20,7 +20,8 @@
 construct_grandma <- function(x){
 
 	# do some checking here of required values
-	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys", "baselineParams", "unsampledPopsParams")
+	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys", 
+							"alleleKeys", "baselineParams", "unsampledPopsParams")
 	if(sum(names(x) != gmaDataNames) > 0) stop("Wrong names to make a gmaData object")
 	
 	class(x) <- "gmaData"
@@ -108,6 +109,7 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 	# set up storage
 	genotypeErrorList <- list() # list of matrices giving P(obs geno | true geno) for each locus
 	genotypeKeyList <- list() # key of genotype code and alleles for each locus
+	alleleKeyList <- list()
 	baselineParams <- list() # list, entry for each population, of lists, for each locus, a named vector giving Dirichlet posterior of
 		# allele frequencies given a 1/N prior, N = number of alleles
 	unsampledPopsParams <- list() # same as baselineParams, but for unsampledPops
@@ -140,7 +142,7 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		
 		numAlleles <- length(alleles)
 		# assign ints to each allele
-		alleleKey <- data.frame(alleles = alleles, intAlleles = 1:numAlleles) # dataframe b/c combining char and num vectors
+		alleleKey <- data.frame(alleles = alleles, intAlleles = 1:numAlleles, stringsAsFactors = FALSE) # dataframe b/c combining char and num vectors
 		
 		# recode alleles
 		baseline[,m] <- recodeAlleles(baseline[,m], alleleKey)
@@ -248,36 +250,41 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		# paramaters of Dirichlet posterior for allele frequency
 		for(p in basePops){
 			baselineParams[[p]][[mName]] <- countAlleles(baseline[,m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
-			names(baselineParams[[p]][[mName]]) <- alleleKey[,1]
+			names(baselineParams[[p]][[mName]]) <- alleleKey[,2] - 1 # -1 for 0 index in c++
 		}
 		if(useUnsamp){
 			for(p in unsamPops){
 				unsampledPopsParams[[p]][[mName]] <- countAlleles(unsampledPops[,m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
-				names(unsampledPopsParams[[p]][[mName]]) <- alleleKey[,1]
+				names(unsampledPopsParams[[p]][[mName]]) <- alleleKey[,2] - 1 # -1 for 0 index in c++
 			}
 		}
 		
-		#recode genotypes
-		baseline[,m] <- recodeGenotypes(baseline[,m:(m+1)], genotypeKey)
-		mixture[,m-1] <- recodeGenotypes(mixture[,(m-1):m], genotypeKey)
+		#recode genotypes - 0 index for c++
+		baseline[,m] <- recodeGenotypes(baseline[,m:(m+1)], genotypeKey) - 1
+		mixture[,m-1] <- recodeGenotypes(mixture[,(m-1):m], genotypeKey) - 1
 		if(useUnsamp){
 			unsampledPops[,m] <- recodeAlleles(unsampledPops[,m], alleleKey)
 			unsampledPops[,m+1] <- recodeAlleles(unsampledPops[,m+1], alleleKey)
 			unsampledPops[,m:(m+1)] <- flipHets(unsampledPops[,m:(m+1)])
-			unsampledPops[,m] <- recodeGenotypes(unsampledPops[,m:(m+1)], genotypeKey)
+			unsampledPops[,m] <- recodeGenotypes(unsampledPops[,m:(m+1)], genotypeKey) - 1
 		}
 		
-		# recode genotypeKey
-		genotypeKey <- data.frame(genotypeCode = 1:nrow(genotypeKey),
-										  allele1 = alleleKey[genotypeKey[,1],1],
-										  allele2 = alleleKey[genotypeKey[,2],1], stringsAsFactors = FALSE)
+		# create as dataframe
+		genotypeKey <- data.frame(genotypeCode = (1:nrow(genotypeKey)) - 1,
+										  allele1 = genotypeKey[,1] - 1,
+										  allele2 = genotypeKey[,2] - 1, stringsAsFactors = FALSE)
+		
 		# add row and column names to genoErr for human readability
 		rownames(genoErr) <- paste0(genotypeKey$allele1, "/", genotypeKey$allele2)
 		colnames(genoErr) <- rownames(genoErr)
 		
+		# 0 index for alleleKey
+		alleleKey[,2] <- alleleKey[,2] - 1
+		
 		# store results
 		genotypeErrorList[[mName]] <- genoErr
 		genotypeKeyList[[mName]] <- genotypeKey
+		alleleKeyList[[mName]] <- alleleKey
 
 	} # end for each locus
 	
@@ -296,6 +303,7 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		unsampledPops = unsampledPops, # returning unsampled Pops, but don't have a use for it right now
 		genotypeErrorRates = genotypeErrorList,
 		genotypeKeys = genotypeKeyList,
+		alleleKeys = alleleKeyList,
 		baselineParams = baselineParams,
 		unsampledPopsParams = unsampledPopsParams
 	)
