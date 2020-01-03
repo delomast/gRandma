@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // ssGP
-int ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey);
-RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP) {
+Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates);
+RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -17,13 +17,14 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
-    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey));
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
+    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 6},
+    {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 7},
     {NULL, NULL, 0}
 };
 

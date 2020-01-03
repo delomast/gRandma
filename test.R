@@ -471,6 +471,9 @@ dropout <- data.frame(locus = "locus1", allele = uAllele, dropoutRate = .01, str
 snpError <- data.frame(locus = "locus1", order = 1:unique(nchar(uAllele)), numBases = c(2,2,3), error = .005, stringsAsFactors = FALSE)
 
 
+base2 <- base2[1:10,]
+base2 <- base2[c(1,5),]
+
 test <- createGmaInput(baseline = base2, mixture = base2[,2:ncol(base2)], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
 
 str(test)
@@ -488,15 +491,15 @@ test$alleleKeys
 
 test
 
-inferGrandma(test, "ssGP")
+res <- inferGrandma(test, "ssGP")
+res[res$Kid == 2,]
 
 
 
-
-Rcpp::cppFunction("int testCpp(int b){
-int a = 5;			 
-for(int i=0; i<a; i++) std::cout<<b<<std::endl;
-return 0;
+Rcpp::cppFunction("double testCpp(int b){
+double a = 5.5;			 
+a++;
+return a;
 }
 			 ")
 
@@ -505,3 +508,62 @@ testCpp(12323)
 
 Rcpp::evalCpp("false + !false")
 
+str(knownGPs)
+
+mixture <- knownGPs$Individual.Name
+baseline <- c(knownGPs$trueGpa, knownGPs$trueGma)
+
+mixture <- genos[mixture,]
+baseline <- genos[baseline,]
+
+boolKeep <- apply(rbind(mixture, baseline), 2, function(x) any(!is.na(x)))
+mixture <- mixture[,boolKeep]
+baseline <- baseline[,boolKeep]
+
+unique(substr(rownames(baseline),1,12))
+baselineIn <- data.frame(substr(rownames(baseline),1,12), rownames(baseline), stringsAsFactors = FALSE)
+
+for(i in 1:ncol(baseline)){
+	baseline[baseline[,i] == -9,i] <- NA
+	baseline[baseline[,i] == 0,i] <- "AA"
+	baseline[baseline[,i] == 1,i] <- "AB"
+	baseline[baseline[,i] == 2,i] <- "BB"
+	baselineIn <- cbind(baselineIn, substr(baseline[,i],1,1), substr(baseline[,i],2,2), stringsAsFactors = FALSE)
+	colnames(baselineIn)[(ncol(baselineIn) - 1) : ncol(baselineIn)] <- c(paste0("Locus_", i), paste0("Locus_", i, ".A2"))
+}
+
+mixtureIn <- data.frame(rownames(mixture), stringsAsFactors = FALSE)
+for(i in 1:ncol(mixture)){
+	mixture[mixture[,i] == -9,i] <- NA
+	mixture[mixture[,i] == 0,i] <- "AA"
+	mixture[mixture[,i] == 1,i] <- "AB"
+	mixture[mixture[,i] == 2,i] <- "BB"
+	mixtureIn <- cbind(mixtureIn, substr(mixture[,i],1,1), substr(mixture[,i],2,2), stringsAsFactors = FALSE)
+	colnames(mixtureIn)[(ncol(mixtureIn) - 1) : ncol(mixtureIn)] <- c(paste0("Locus_", i), paste0("Locus_", i, ".A2"))
+}
+
+colnames(baselineIn)[3:ncol(baselineIn)] == colnames(mixtureIn)[2:ncol(mixtureIn)]
+
+dropout <- data.frame()
+snpError <- data.frame()
+for (i in seq(3, ncol(baselineIn) - 1, 2)){
+	uAllele <- unique(na.omit(c(baselineIn[,i], baselineIn[,i+1], mixtureIn[,i-1], mixtureIn[,i])))
+	dropout <- rbind(dropout, data.frame(
+		locus = colnames(baselineIn)[i],
+		allele = uAllele,
+		dropoutRate = .005,
+		stringsAsFactors = FALSE
+	), stringsAsFactors = FALSE)
+	
+	snpError <- rbind(snpError, data.frame(
+		locus = colnames(baselineIn)[i],
+		order = 1:unique(nchar(uAllele)),
+		numBases = 2,
+		error = .005,
+		stringsAsFactors = FALSE
+	), stringsAsFactors = FALSE)
+	
+	
+}
+
+test <- createGmaInput(baseline = baselineIn, mixture = mixtureIn[1:10,], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)

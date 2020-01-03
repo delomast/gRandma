@@ -9,18 +9,6 @@
 #' @keywords internal
 NULL
 
-#' list all possible pairs of individuals from a vector of individual ID's (as integers)
-NULL
-
-#' convert a NumericMatrix of ints to to nested vectors, index 1 is row index 2 is column
-NULL
-
-#' convert a List of NumericVectors to nested vectors index 1 is list position, index 2 is vector position
-NULL
-
-#' convert the GenotypeKey list to nested vectors
-NULL
-
 #' caluculate likelihood of parent 1, parent 2, and offspring genotypes given Mendalian inheritance
 #' @param p1 parent 1 genotypes (two ints - diploid)
 #' @param p2 parent 2 genotypes (two ints - diploid)
@@ -34,11 +22,13 @@ NULL
 #' @param crossRecords col1 is pop, col2 is id 1, col3 is id2
 #' @param baselineParams Dirichlet parameters for allele frequencies
 #' @param unsampledPopParams Dirichlet parameters for allele frequencies
-#' @param genotypeKey col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
 #' @keywords internal
 #' @noRd
 #' @export
-ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey) {
-    .Call(`_gRandma_ssGP`, baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey)
+ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates) {
+    .Call(`_gRandma_ssGP`, baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates)
 }
 

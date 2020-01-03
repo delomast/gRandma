@@ -124,3 +124,13 @@ countAlleles <- function(genotypes, alleles){
 	counts[is.na(counts)] <- 0
 	return(counts)
 }
+
+#' convert NA entries to -9 for c++ to recognize easily
+#' #param v vector of entries for which to convert
+#' @keywords internal
+#' @noRd
+convertMissing <- function(v){
+	v[is.na(v)] <- -9
+	return(v)
+}
+

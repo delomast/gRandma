@@ -49,8 +49,13 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 	gmaData$baseline[,2] <- as.numeric(indivKey[match(gmaData$baseline[,2], indivKey[,1]),2])
 	gmaData$mixture[,1] <- as.numeric(indivKey[match(gmaData$mixture[,1], indivKey[,1]),2])
 	
-	# make sure loci are in order in baseline, mixture, genotypeKey, baselineParams, and unsampledPopParams
+	# make sure loci are in order in baseline, mixture, genotypeKey, genotypeErrorRates,
+	#   baselineParams, and unsampledPopParams
 	############# todo
+	
+	# turn NA genotypes into -9 for c++ to easily recognize
+	gmaData$baseline[,3:ncol(gmaData$baseline)] <- apply(gmaData$baseline[,3:ncol(gmaData$baseline), drop = FALSE], 2, convertMissing)
+	gmaData$mixture[,2:ncol(gmaData$mixture)] <- apply(gmaData$mixture[,2:ncol(gmaData$mixture), drop = FALSE], 2, convertMissing)
 	
 	if(rel == "ssGP"){
 		if(is.null(crossRecords)){
@@ -61,7 +66,8 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 		# change things to numeric matrices when pass them to c++
 		gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
 		results <- ssGP(as.matrix(gmaData$baseline), as.matrix(gmaData$mixture), crossRecords, 
-							 gmaData$baselineParams, gmaData$unsampledPopParams, gmaData$genotypeKey)
+							 gmaData$baselineParams, gmaData$unsampledPopParams, gmaData$genotypeKey,
+							 gmaData$genotypeErrorRates)
 		return(results) #testing
 	}
 	

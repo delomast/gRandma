@@ -98,7 +98,7 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 	# first, get names of all markers
 	markers <- colnames(baseline)[seq(3, (ncol(baseline) - 1), 2)]
 	markersMix <- colnames(mixture)[seq(2, (ncol(mixture) - 1), 2)]
-	if(markers != markersMix) stop("error, the loci are either not the same or not in the same order between the baseline and mixture.")
+	if(any(markers != markersMix)) stop("error, the loci are either not the same or not in the same order between the baseline and mixture.")
 	if(any(!(markers %in% perSNPerror[,1]))) stop("not all markers have entries in perSNPerror")
 	if(any(perSNPerror[,3] < 2)) stop("all SNPs in perSNPerror must have 2 or more alleles")
 	if(useUnsamp){
@@ -243,7 +243,7 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		}
 		
 		# check sums and issue warning about alleles if pertinent
-		if(!all.equal(rowSums(genoErr), rep(1, nrow(genoErr)))) warning("Not all observed genotype probabilities sum to 1 at locus", mName, 
+		if(!isTRUE(all.equal(rowSums(genoErr), rep(1, nrow(genoErr))))) warning("Not all observed genotype probabilities sum to 1 at locus", mName, 
 				". This can happen when the number of alleles observed at a SNP in the data do not match the number of SNPs given ",
 				"in perSNPerror. If it is simply because some known alleles were not observed in this population, this warning can probably be ignored.")
 		
