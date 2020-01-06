@@ -43,12 +43,17 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 		}
 	}
 	gmaData$unsampledPopParams <- new
+	if(!is.null(crossRecords)) crossRecords[,1] <- as.numeric(popKey[match(crossRecords[,1], popKey[,1]),2])
 
 	indivKey <- data.frame(indivName = c(gmaData$baseline[,2], gmaData$mixture[,1]), 
 								  indivInt = 0:(nrow(gmaData$baseline) + nrow(gmaData$mixture) - 1), stringsAsFactors = FALSE)
 	gmaData$baseline[,2] <- as.numeric(indivKey[match(gmaData$baseline[,2], indivKey[,1]),2])
 	gmaData$mixture[,1] <- as.numeric(indivKey[match(gmaData$mixture[,1], indivKey[,1]),2])
-	
+	if(!is.null(crossRecords)) {
+		crossRecords[,2] <- as.numeric(indivKey[match(crossRecords[,2], indivKey[,1]),2])
+		crossRecords[,3] <- as.numeric(indivKey[match(crossRecords[,3], indivKey[,1]),2])
+	}
+
 	# make sure loci are in order in baseline, mixture, genotypeKey, genotypeErrorRates,
 	#   baselineParams, and unsampledPopParams
 	############# todo
@@ -68,9 +73,16 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 		results <- ssGP(as.matrix(gmaData$baseline), as.matrix(gmaData$mixture), crossRecords, 
 							 gmaData$baselineParams, gmaData$unsampledPopParams, gmaData$genotypeKey,
 							 gmaData$genotypeErrorRates)
-		return(results) #testing
+
 	}
 	
 	# decode everything from ints back into strings
+	results[,2] <- popKey[match(results[,2], popKey[,2]),1]
+	results[,1] <- indivKey[match(results[,1], indivKey[,2]),1]
+	results[,3] <- indivKey[match(results[,3], indivKey[,2]),1]
+	results[,4] <- indivKey[match(results[,4], indivKey[,2]),1]
+		
+		
+	return(results) #testing
 	
 }

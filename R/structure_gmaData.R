@@ -30,14 +30,14 @@ construct_grandma <- function(x){
 
 #' print method for gmaData
 print.gmaData <- function(x){
-	cat("\ngmaData object with\n")
-	cat(length(unique(x$baseline[,1])), " baseline population(s)\n")
+	cat("\ngmaData object with\n\t")
+	cat(length(unique(x$baseline[,1])), " baseline population(s)\n\t")
 	if(is.null(x$unsampledPops)){
-		cat("No unsampledPops\n")
+		cat("No unsampledPops\n\t")
 	} else{
-		cat(length(unique(x$unsampledPops[,1])), " unsampled population(s)\n")
+		cat(length(unique(x$unsampledPops[,1])), " unsampled population(s)\n\t")
 	}
-	cat(nrow(x$mixture), " mixture individuals\n")
+	cat(nrow(x$mixture), " mixture individuals\n\t")
 	cat(length(x$genotypeErrorRates), " loci\n")
 	cat("The number of loci by number of unique alleles is:\n")
 	print(table(sapply(x$genotypeKeys, function(y){
@@ -116,10 +116,10 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 	
 	# initiate storage for different pops
 	basePops <- unique(baseline[,1])
-	for(p in basePops) baselineParams[[p]] <- list()
+	for(p in basePops) baselineParams[[as.character(p)]] <- list()
 	if(useUnsamp){
 		unsamPops <- unique(unsampledPops[,1])
-		for(p in unsamPops) unsampledPopsParams[[p]] <- list()
+		for(p in unsamPops) unsampledPopsParams[[as.character(p)]] <- list()
 	}
 	
 	# now, for each locus
@@ -136,9 +136,15 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		alleles <- sort(unique(c(baseline[,m], baseline[,m+1], mixture[,m-1], mixture[,m])))
 		if(useUnsamp) alleles <- sort(unique(c(alleles, unsampledPops[,m], unsampledPops[,m+1])))
 		alleles <- alleles[!is.na(alleles)]
+		
+		# check that locus is variable and not all missing
+		if(length(alleles) == 0) stop("no genotypes for locus ", mName)
+		if(length(alleles) == 1) stop("no variation for locus ", mName)
+		
 		lenLocus <- unique(nchar(alleles))
 		if(length(lenLocus) != 1) stop("not all alleles are the same length for locus ", mName)
-		if(lenLocus != nrow(tempPerSNPerror)) stop("not all SNPs have error rates for locus ", mName)
+		if(lenLocus < nrow(tempPerSNPerror)) stop("not all SNPs have error rates for locus ", mName)
+		if(lenLocus > nrow(tempPerSNPerror)) stop("more error rates for locus ", mName, " than there are SNPs")
 		
 		numAlleles <- length(alleles)
 		# assign ints to each allele
@@ -249,13 +255,13 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		
 		# paramaters of Dirichlet posterior for allele frequency
 		for(p in basePops){
-			baselineParams[[p]][[mName]] <- countAlleles(baseline[,m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
-			names(baselineParams[[p]][[mName]]) <- alleleKey[,2] - 1 # -1 for 0 index in c++
+			baselineParams[[as.character(p)]][[mName]] <- countAlleles(baseline[baseline[,1] == p, m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
+			names(baselineParams[[as.character(p)]][[mName]]) <- alleleKey[,2] - 1 # -1 for 0 index in c++
 		}
 		if(useUnsamp){
 			for(p in unsamPops){
-				unsampledPopsParams[[p]][[mName]] <- countAlleles(unsampledPops[,m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
-				names(unsampledPopsParams[[p]][[mName]]) <- alleleKey[,2] - 1 # -1 for 0 index in c++
+				unsampledPopsParams[[as.character(p)]][[mName]] <- countAlleles(unsampledPops[unsampledPops[,1] == p, m:(m+1)], alleleKey[,2]) + (1/nrow(alleleKey))
+				names(unsampledPopsParams[[as.character(p)]][[mName]]) <- alleleKey[,2] - 1 # -1 for 0 index in c++
 			}
 		}
 		

@@ -51,7 +51,7 @@ p_obsG <- function(obsG, trueG, epsPerAllele){
 		if(trueG == 1){
 			return((1 - epsPerAllele)^2 + epsPerAllele^2)
 		} else {
-			return((1-epsPerAllele)*epsPerAllele)
+			return((1-epsPerAllele)*epsPerAllele*2)
 		}
 	}
 }

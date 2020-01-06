@@ -508,6 +508,94 @@ testCpp(12323)
 
 Rcpp::evalCpp("false + !false")
 
+########## testing c++ functions
+
+testData <- read.csv("all_sockeye_BCB.txt", sep = "\t", stringsAsFactors = FALSE)
+head(testData)
+
+genos <- testData[,28:ncol(testData)]
+str(genos)
+genos <- apply(genos,2, function(x){
+	y <- rep(-9, length(x))
+	y[x == "AA"] <- 0
+	y[x == "AB"] <- 1
+	y[x == "BA"] <- 1
+	y[x == "BB"] <- 2
+	# y[x == "00"] <- -9
+	return(as.numeric(y))
+	
+})
+rownames(genos) <- testData$Individual.Name
+
+genos[1:10,1:10]
+boolKeep <- apply(genos,1,function(x) sum(x != -9)/length(x) >= .9)
+genos <- genos[boolKeep,]
+
+## filter out nonvariable SNPs
+boolKeep <- apply(genos, 2, function(x) sum(x %in% c(-9, 0)) != length(x) && sum(x %in% c(-9, 2)) != length(x) )
+genos <- genos[,boolKeep]
+str(genos)
+
+## remove failed individuals from testData
+testData <- testData[testData$Individual.Name %in% rownames(genos),]
+
+#make list of all crosses
+table(substr(rownames(genos), 1,10))
+
+## lets work with mixture of SY2017
+mixtureInds <- rownames(genos)[grepl("17BCB", rownames(genos))]
+
+mixture <- testData[testData$Individual.Name %in% mixtureInds, 1:27]
+mixture <- mixture[!is.na(mixture$GenMa),]
+mixture$trueGpa <- ""
+mixture$trueGma <- ""
+for(i in 1:nrow(mixture)){
+	if(mixture$GenMa[i] %in% testData$Individual.Name){
+		# tempGpa <- testData$GenPa[match(mixture$GenMa, testData$Individual.Name),]
+		# tempGma <- testData$GenMa[match(mixture$GenMa, testData$Individual.Name),]
+		mixture$trueGpa[i] <- testData$GenPa[match(mixture$GenMa[i], testData$Individual.Name)]
+		mixture$trueGma[i] <- testData$GenMa[match(mixture$GenMa[i], testData$Individual.Name)]
+	}
+}
+
+baselinePeds <- unique(substr(c(mixture$trueGma, mixture$trueGpa), 1,12))
+baselinePeds <- baselinePeds[baselinePeds != ""]
+
+baseline <- testData[testData$Pedigree %in% baselinePeds,]
+baseline <- baseline[baseline$Individual.Name %in% rownames(genos),]
+baseline <- baseline[,1:27]
+#check CrossedAdditional
+sum(!is.na(baseline$CrossedAdditional))
+#0
+baseline <- baseline[,colnames(baseline) != "CrossedAdditional"]
+crossCols <- colnames(baseline)[grepl("Cross", colnames(baseline))]
+crosses <- matrix(0,0,2)
+for(i in 1:nrow(baseline)){
+	indiv <- baseline[i,"Individual.Name"]
+	partners <- baseline[i,crossCols]
+	partners <- partners[!is.na(partners) & partners != ""]
+	if(length(partners) < 1) next
+	tempCross <- cbind(indiv, partners)
+	rem <- c()
+	for(j in 1:nrow(tempCross)){
+		if(sum(crosses[,1] == tempCross[j,2] & crosses[,2] == tempCross[j,1]) > 0) rem <- c(rem,j)
+	}
+	if(length(rem > 0)) tempCross <- tempCross[-rem,]
+	crosses <- rbind(crosses, tempCross)
+}
+nrow(baseline)
+nrow(crosses)
+
+# now allele counts in baseline pop and add .5
+## this is posterior mean with beta(.5,.5) as the prior
+refFreqList <- apply(genos[baseline$Individual.Name,],2,function(x) sum(x == 1) + 2*sum(x == 0) + .5)
+altFreqList <- apply(genos[baseline$Individual.Name,],2,function(x) sum(x == 1) + 2*sum(x == 2) + .5)
+
+
+### selecting just some known grandaparents and some random non-grandparents
+
+knownGPs <- mixture[mixture$trueGma %in% baseline$Individual.Name & mixture$trueGpa %in% baseline$Individual.Name,]
+
 str(knownGPs)
 
 mixture <- knownGPs$Individual.Name
@@ -516,7 +604,11 @@ baseline <- c(knownGPs$trueGpa, knownGPs$trueGma)
 mixture <- genos[mixture,]
 baseline <- genos[baseline,]
 
-boolKeep <- apply(rbind(mixture, baseline), 2, function(x) any(!is.na(x)))
+boolKeep <- apply(rbind(mixture, baseline), 2, function(x) any(!is.na(x) && x != -9))
+mixture <- mixture[,boolKeep]
+baseline <- baseline[,boolKeep]
+
+boolKeep <- apply(rbind(mixture, baseline), 2, function(x) length(unique(na.omit(x[x != -9]))) > 1)
 mixture <- mixture[,boolKeep]
 baseline <- baseline[,boolKeep]
 
@@ -551,7 +643,8 @@ for (i in seq(3, ncol(baselineIn) - 1, 2)){
 	dropout <- rbind(dropout, data.frame(
 		locus = colnames(baselineIn)[i],
 		allele = uAllele,
-		dropoutRate = .005,
+		# dropoutRate = .005,
+		dropoutRate = 0,
 		stringsAsFactors = FALSE
 	), stringsAsFactors = FALSE)
 	
@@ -562,8 +655,67 @@ for (i in seq(3, ncol(baselineIn) - 1, 2)){
 		error = .005,
 		stringsAsFactors = FALSE
 	), stringsAsFactors = FALSE)
-	
-	
 }
 
-test <- createGmaInput(baseline = baselineIn, mixture = mixtureIn[1:10,], unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+# rm(testData)
+# save.image("savedcpptest.rda")
+# load("savedcpptest.rda")
+
+test <- createGmaInput(baseline = baselineIn[,!grepl("Locus_(8|15|122)", colnames(baselineIn))], 
+							  mixture = mixtureIn[1:10,!grepl("Locus_(8|15|122)", colnames(mixtureIn))], 
+							  unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+test
+
+crossRec <- knownGPs[,c("trueGpa", "trueGma")]
+crossRec <- cbind(substr(crossRec$trueGma, 1, 12), crossRec, stringsAsFactors = FALSE)
+crossRec <- unique(crossRec)
+
+results <- inferGrandma(test, relationship = "ssGP", crossRecords = crossRec)
+
+head(results)
+knownGPs <- knownGPs[,c("Individual.Name", "trueGpa", "trueGma")]
+head(knownGPs)
+results$trueGP <- FALSE
+for(i in 1:nrow(results)){
+	truth <- unlist(knownGPs[knownGPs$Individual.Name == results$Kid[i], c("trueGpa", "trueGma")])
+	if(results$Gma[i] %in% truth & results$Gpa[i] %in% truth) results$trueGP[i] <- TRUE
+}
+table(results$trueGP)
+boxplot(results$llr ~ results$trueGP)
+
+summary(results$llr[results$trueGP])
+summary(results$llr[!results$trueGP])
+
+# compare numbers with R calculations 
+testBase <- matrix(c(0,0,0,1,1,2,1,2),2,4)
+testMix <- matrix(c(0,1,2),1,3)
+colnames(testBase) <- c("pop", "ind", "l1", "l1.1")
+colnames(testMix) <- c("ind", "l1", "l1.1")
+
+testErr <- data.frame(loc = "l1",
+							 or = 1,
+							 num = 2,
+							 err = 0.005, stringsAsFactors = FALSE)
+testDrop <- data.frame(loc = "l1",
+							  all = c(1,2),
+							  drop = 0, stringsAsFactors = FALSE)
+
+testGMA <- createGmaInput(baseline = testBase, 
+							  mixture = testMix, 
+							  unsampledPops = NULL, perSNPerror = testErr, dropoutProb = testDrop)
+
+inferGrandma(testGMA)
+
+refFreqList <- testGMA$baselineParams$`0`$l1[1]
+altFreqList <- testGMA$baselineParams$`0`$l1[2]
+
+multWithError(kid = 1, gMa = 0, gPa = 2, altFreqList = altFreqList, refFreqList = refFreqList, epsList = rep(0.005,length(kidGenos))) -
+	probUerror(kid = 1, gMa = 0, gPa = 2, altFreqList = altFreqList, refFreqList = refFreqList, epsList = rep (0.005,length(kidGenos)))
+
+# they match perfectly when error is 0, but not when there is an error rate (but dropout is 0)
+# ok, found an error in the error rate calculation for the R calcs, now it is fixed and they match with error
+
+testGMA$genotypeErrorRates
+rowSums(testGMA$genotypeErrorRates[[1]])
+
+head(results)

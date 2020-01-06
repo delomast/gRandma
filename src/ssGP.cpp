@@ -132,12 +132,14 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 			lGenos_base.push_back(tempBase);
 			lGenos_unsamp.push_back(tempUnsamp);
 		}
-
+cout<<"number of pairs for each: "<< pairs.size()<<endl;
 		// for each individual in the mixture
 		for(int m = 0, maxM = mixtureC.size(); m < maxM; m++){
 			cout<<m<<endl;
 			for(int i = 0, max = pairs.size(); i < max; i++){ // for each pair
+				// cout<<i<<endl;
 				if(i % 100 == 0) Rcpp::checkUserInterrupt();
+				if(i % 500 == 0) cout<<"pair number: "<<i<<endl;
 				/* filter pairs based on MI
 				 * for a pair of grandparents, number of MI is the number of loci for which the grandparent pair
 				 * and potential descendant share no alleles in common
@@ -145,6 +147,10 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 				int countMI = 0;
 				bool skip = false;
 				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ // for each locus
+					int gp1Geno = baselineC[pairs[i][0]][j+2];
+					int gp2Geno = baselineC[pairs[i][1]][j+2];
+					int dGeno = mixtureC[m][j+1];
+					if(gp1Geno == -9 || gp2Geno == -9 || dGeno == -9) continue; // skip if any missing
 					if(noAllelesInCommonGP(
 							genotypeKeyC[j][baselineC[pairs[i][0]][j+2]], // gp1 genotype as vector of alleles
 							genotypeKeyC[j][baselineC[pairs[i][1]][j+2]], // gp2 genotype as vector of alleles
@@ -237,7 +243,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 				}
 				
 				// save results
-				mixtureInd.push_back(m);
+				mixtureInd.push_back(mixtureC[m][0]);
 				GrandparentPop.push_back(pop);
 				grandparent1.push_back(pairs[i][0]);
 				grandparent2.push_back(pairs[i][1]);
