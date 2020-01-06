@@ -715,7 +715,4 @@ multWithError(kid = 1, gMa = 0, gPa = 2, altFreqList = altFreqList, refFreqList 
 # they match perfectly when error is 0, but not when there is an error rate (but dropout is 0)
 # ok, found an error in the error rate calculation for the R calcs, now it is fixed and they match with error
 
-testGMA$genotypeErrorRates
-rowSums(testGMA$genotypeErrorRates[[1]])
-
 head(results)
