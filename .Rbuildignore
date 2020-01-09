@@ -2,3 +2,5 @@
 ^\.Rproj\.user$
 ^test.R$
 ^.*.txt$
+README.md
+.*.rda
