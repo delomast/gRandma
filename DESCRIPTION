@@ -1,13 +1,13 @@
 Package: gRandma
 Type: Package
-Title: What the Package Does in One 'Title Case' Line
+Title: Inference of Grandparentage With Genetic Markers
 Version: 1.0
 Date: 2019-12-12
-Author: Your Name
-Maintainer: Your Name <your@email.com>
-Description: One paragraph description of what the package
-      does as one or more full sentences.
-License: GPL (>= 2)
+Author: Thomas Delomas
+Maintainer: Thomas Delomas <thomas.delomas@idfg.idaho.gov>
+Description: Inference of grandparentage based on genetic markers, 
+      namely single nucleotide polymorphisms (SNPs) and microhaplotypes
+License: MIT + file LICENSE
 Imports: Rcpp (>= 1.0.2)
 LinkingTo: Rcpp
 RoxygenNote: 6.1.1
