@@ -7,12 +7,26 @@
 #include <vector>
 #include "misc_math.h"
 
-std::vector <std::vector <int> > listAllPairs(std::vector <int> allInds);
+void listAllPairs(const std::vector <int>& allInds,
+                                              std::vector <std::vector <int> >& pairs);
 std::vector <std::vector <int> > rcppMatrixToVectorInt(Rcpp::NumericMatrix inputMatrix);
 std::vector <std::vector <double> > rcppListToVectorDouble(Rcpp::List inputList);
 std::vector <std::vector <std::vector <int> > > convertGenotypeKey(Rcpp::List inputList);
 std::vector < std::vector <double> > rcppMatrixToVectorDouble(Rcpp::NumericMatrix inputMatrix);
-std::vector <std::vector <std::vector <std::vector <double> > > > createPPOvector(std::vector <std::vector <std::vector <int> > > genotypeKeyC);
-bool noAllelesInCommonGP(std::vector <int> gp1, std::vector <int> gp2, std::vector <int> d);
+void createPPOvector(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC,
+                std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_ppo);
+bool noAllelesInCommonGP(const std::vector <int>& gp1, const std::vector <int>& gp2, 
+                         const std::vector <int>& d);
+void createSSGPvector(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC, 
+                      const  std::vector <std::vector <double> >& lGenos_base, 
+                      const std::vector <std::vector <std::vector <double> > >& unsampledPopParamsC, 
+                      const int pop, 
+                      std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_ssGP);
+void createOBSvector(const std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_ssGP, 
+                          const std::vector< std::vector < std::vector <double> > >& genotypeErrorRatesC, 
+                          std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_ssGP_OBS,
+                          const std::vector <std::vector <double> >& lGenos_base,
+                          const std::vector <std::vector <double> >& lGenos_unsamp,
+                          std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_Unrelated_OBS);
 
 #endif

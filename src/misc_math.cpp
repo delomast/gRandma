@@ -8,15 +8,11 @@
 using namespace std;
 
 
-
-//' pmf of Dirichlet-multinomial distribution
-//' @param n the total number of draws
-//' @param k a vector of the number of observations in each category
-//' @param a a vector of the parameters (alpha) describing the Dirichlet
-//' @noRd
-//' @keywords internal
-
-double logDirichMultPMF(vector <double> k, vector <double> a){
+// pmf of Dirichlet-multinomial distribution
+// @param k a vector of the number of observations in each category
+// @param a a vector of the parameters (alpha) describing the Dirichlet
+ 
+double logDirichMultPMF(const vector <double>& k, const vector <double>& a){
 	int numAlpha = a.size();
 	int numK = k.size(); // just prevent compiler warning b/c I am nitpicky
 	if (numK != numAlpha) Rcpp::stop("internal error: k not equal to a in logdirichMultPMF");
@@ -35,11 +31,12 @@ double logDirichMultPMF(vector <double> k, vector <double> a){
 }
 
 
-//' caluculate likelihood of parent 1, parent 2, and offspring genotypes given Mendalian inheritance
-//' @param p1 parent 1 genotypes (two ints - diploid)
-//' @param p2 parent 2 genotypes (two ints - diploid)
-//' @param o offspring genotypes (two ints - diploid)
-double ppoMendelian(vector <int> p1, vector <int> p2, vector <int> o){
+// caluculate likelihood of parent 1, parent 2, and offspring genotypes given Mendalian inheritance
+// @param p1 parent 1 genotypes (two ints - diploid)
+// @param p2 parent 2 genotypes (two ints - diploid)
+// @param o offspring genotypes (two ints - diploid)
+ 
+double ppoMendelian(const vector <int>& p1, const vector <int>& p2, const vector <int>& o){
 
 	bool o0p1 = (o[0] == p1[0] || o[0] == p1[1]); // is o[0] in p1
 	bool o0p2 = (o[0] == p2[0] || o[0] == p2[1]); // is o[0] in p2

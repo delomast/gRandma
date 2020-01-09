@@ -4,15 +4,20 @@
 #' 
 #' and some more here
 #' 
-#' @param gmaData
-#' @param relationship
+#' @param gmaData the gmaData object containing your baseline populations and potential descendents. This 
+#'   input is created by \code{createGmaInput}
+#' @param relationship the relationship you want to test for: "ssGP" - single sided grandparentage 
+#'   (a pair of either two maternal grandparents OR two paternal grandparents)
 #' @param crossRecords dataframe or matrix: column 1 is population, column 2 is individual
 #'  1 identifier, column 3 is individual 2 identifier
-#' 
-#' 
-#' 
+#' @param minLLR the minimum LLR to include in the results. Only used if \code{filterLLR} is \code{TRUE}.
+#' @param filterLLR \code{TRUE} to filter results based on minLLR, \code{FALSE} to not.
+#' @param MIexcludeProb the maximum probability of exclusion for a true grandparent pair due to 
+#'   Mendelian incompatibilities. If \code{0}, then no filtering of potential grandparent pairs is performed
+#'   based on Mendelian incompatibilities.
 #' @export
-inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), crossRecords = NULL){
+inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), crossRecords = NULL, minLLR = 0,
+								 filterLLR = TRUE, MIexcludeProb = .0001){
 	rel <- match.arg(relationship)
 	
 	useUnsamp <- FALSE
@@ -29,6 +34,12 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 	names(gmaData$baselineParams) <- as.character(popKey[match(names(gmaData$baselineParams), popKey[,1]),2])
 	gmaData$baselineParams <- gmaData$baselineParams[order(as.numeric(names(gmaData$baselineParams)))]
 	
+	cat("\nBaseline populations will be evaluated in the following order:\n")
+	for(i in 1:nrow(popKey)){
+		cat("\t", i, popKey[i,1], "\n")
+	}
+	cat("\n")
+	
 	if(useUnsamp) {
 		names(gmaData$unsampledPopsParams) <- as.character(popKey[match(names(gmaData$unsampledPopsParams), popKey[,1]),2])
 	}
@@ -36,13 +47,13 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 	# don't have "unsampledPopParams"
 	new <- list()
 	for(i in 1:length(allPops)){
-		if(useUnsamp && as.character(i-1) %in% names(gmaData$unsampledPopsparams)){
-			new[[i]] <- gmaData$unsampledPopsparams[[as.character(i-1)]]
+		if(useUnsamp && as.character(i-1) %in% names(gmaData$unsampledPopsParams)){
+			new[[i]] <- gmaData$unsampledPopsParams[[as.character(i-1)]]
 		} else {
 			new[[i]] <- gmaData$baselineParams[[i]]
 		}
 	}
-	gmaData$unsampledPopParams <- new
+	gmaData$unsampledPopsParams <- new
 	if(!is.null(crossRecords)) crossRecords[,1] <- as.numeric(popKey[match(crossRecords[,1], popKey[,1]),2])
 
 	indivKey <- data.frame(indivName = c(gmaData$baseline[,2], gmaData$mixture[,1]), 
@@ -70,9 +81,10 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 		}
 		# change things to numeric matrices when pass them to c++
 		gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
+		
 		results <- ssGP(as.matrix(gmaData$baseline), as.matrix(gmaData$mixture), crossRecords, 
-							 gmaData$baselineParams, gmaData$unsampledPopParams, gmaData$genotypeKey,
-							 gmaData$genotypeErrorRates)
+							 gmaData$baselineParams, gmaData$unsampledPopsParams, gmaData$genotypeKey,
+							 gmaData$genotypeErrorRates, minLLR, MIexcludeProb, filterLLR)
 
 	}
 	

@@ -29,6 +29,8 @@ construct_grandma <- function(x){
 }
 
 #' print method for gmaData
+#' @keywords internal
+#' @noRd
 print.gmaData <- function(x){
 	cat("\ngmaData object with\n\t")
 	cat(length(unique(x$baseline[,1])), " baseline population(s)\n\t")

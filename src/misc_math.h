@@ -7,7 +7,7 @@
 #include <math.h>
 #include <vector>
 
-double logDirichMultPMF(std::vector <double> k, std::vector <double> a);
-double ppoMendelian(std::vector <int> p1, std::vector <int> p2, std::vector <int> o);
+double logDirichMultPMF(const std::vector <double>& k, const std::vector <double>& a);
+double ppoMendelian(const std::vector <int>& p1, const std::vector <int>& p2, const std::vector <int>& o);
 
 #endif

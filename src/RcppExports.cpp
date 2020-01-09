@@ -6,8 +6,8 @@
 using namespace Rcpp;
 
 // ssGP
-Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates);
-RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP) {
+Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, double saveLLR, double MIexcludeProb, bool filterLLR);
+RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP saveLLRSEXP, SEXP MIexcludeProbSEXP, SEXP filterLLRSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -18,13 +18,16 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
     Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
-    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates));
+    Rcpp::traits::input_parameter< double >::type saveLLR(saveLLRSEXP);
+    Rcpp::traits::input_parameter< double >::type MIexcludeProb(MIexcludeProbSEXP);
+    Rcpp::traits::input_parameter< bool >::type filterLLR(filterLLRSEXP);
+    rcpp_result_gen = Rcpp::wrap(ssGP(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates, saveLLR, MIexcludeProb, filterLLR));
     return rcpp_result_gen;
 END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 7},
+    {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 10},
     {NULL, NULL, 0}
 };
 

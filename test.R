@@ -670,7 +670,32 @@ crossRec <- knownGPs[,c("trueGpa", "trueGma")]
 crossRec <- cbind(substr(crossRec$trueGma, 1, 12), crossRec, stringsAsFactors = FALSE)
 crossRec <- unique(crossRec)
 
-results <- inferGrandma(test, relationship = "ssGP", crossRecords = crossRec)
+# results <- results2
+system.time(results2 <- inferGrandma(test, relationship = "ssGP", crossRecords = crossRec, boolOld = FALSE))
+# old: 13.4
+# new: 2.81
+# newer: 1.68
+# even newer: .4 !!!!!!!!!!!!!!!!
+# even even newer: .39 !!!!!!!!!!!!
+
+results2 <- inferGrandma(test, relationship = "ssGP", crossRecords = crossRec)
+
+identical(results, results2)
+all.equal(results, results2)
+table(test$baseline[,1])
+
+mapply(identical, results, results2)
+mapply(all.equal, results, results2)
+cbind(results$llr, results2$llr)
+mapply(identical, results$llr, results2$llr)
+results$llr - results2$llr
+summary(results$llr - results2$llr)
+
+
+inferGrandma(test, relationship = "ssGP", crossRecords = crossRec, minLLR = 0,
+								 filterLLR = FALSE, MIexcludeProb = .01)
+
+results_noCrRec <- inferGrandma(test, relationship = "ssGP", crossRecords = NULL)
 
 head(results)
 knownGPs <- knownGPs[,c("Individual.Name", "trueGpa", "trueGma")]
@@ -688,7 +713,7 @@ summary(results$llr[!results$trueGP])
 
 # compare numbers with R calculations 
 testBase <- matrix(c(0,0,0,1,1,2,1,2),2,4)
-testMix <- matrix(c(0,1,2),1,3)
+testMix <- matrix(c(0,1,1),1,3)
 colnames(testBase) <- c("pop", "ind", "l1", "l1.1")
 colnames(testMix) <- c("ind", "l1", "l1.1")
 
@@ -704,7 +729,25 @@ testGMA <- createGmaInput(baseline = testBase,
 							  mixture = testMix, 
 							  unsampledPops = NULL, perSNPerror = testErr, dropoutProb = testDrop)
 
-inferGrandma(testGMA)
+testGMA$baselineParams$`0`$l1[1] <- 2.5
+testGMA$baselineParams$`0`$l1[2] <- 2.5
+testGMA$unsampledPopsParams$`0`$l1[2] <- 100
+# testGMA$unsampledPopsParams <- testGMA$baselineParams
+
+inferGrandma(testGMA, boolOld = TRUE)
+inferGrandma(testGMA, boolOld = FALSE)
+# Number of pairs to test in the current baseline population: 1
+#   Kid Gpop Gma Gpa     llr MI
+# 1   0    0   0   1 2.60701  0
+
+testGMA$genotypeKeys
+
+.001
+.04
+1.1
+
+-3.3414778106589509
+-3.1631167089090977
 
 refFreqList <- testGMA$baselineParams$`0`$l1[1]
 altFreqList <- testGMA$baselineParams$`0`$l1[2]
@@ -716,3 +759,5 @@ multWithError(kid = 1, gMa = 0, gPa = 2, altFreqList = altFreqList, refFreqList 
 # ok, found an error in the error rate calculation for the R calcs, now it is fixed and they match with error
 
 head(results)
+
+
