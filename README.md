@@ -1,8 +1,8 @@
 # gRandma
-grandparentage inference
-
-Inference of grandparentage based on genetic markers, namely SNPs and microhaplotypes
-Potentailly some other relationships as well, but main function is grandparentage
-Current options:
-  "single-sided" grandparentage: a trio of grandchild + both maternal grandparents (or both paternal grandparents)
+grandparentage inference </br>
+</br> </br> 
+Inference of grandparentage based on genetic markers, namely SNPs and microhaplotypes </br>
+Potentially some other relationships as well, but main goal is grandparentage </br>
+Current options: </br>
+* "single-sided" grandparentage: a trio of grandchild + both maternal grandparents (or both paternal grandparents) </br>
 
