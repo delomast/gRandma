@@ -761,3 +761,11 @@ multWithError(kid = 1, gMa = 0, gPa = 2, altFreqList = altFreqList, refFreqList 
 head(results)
 
 
+load("S:\\Eagle Fish Genetics Lab\\Tom\\gRandma demo/afterDataPrep.rda")
+
+basInds <- gmaInput$baseline$IndividualID
+crossRecords <- crossRecords[crossRecords$ind1 %in% basInds & crossRecords$ind2 %in% basInds,]
+
+testResults <- inferGrandma(gmaData = gmaInput, relationship = "ssGP", crossRecords = crossRecords,
+				 minLLR = 0, filterLLR = TRUE, MIexcludeProb = 10^-4)
+

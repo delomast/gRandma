@@ -94,6 +94,8 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		warning("Coercing mixture to a dataframe")
 		unsampledPops <- as.data.frame(unsampledPops)
 	}
+	if(any(apply(baseline[,1:2],2, function(x) any(is.na(x))))) stop("NA values are not allowed in baseline columns 1 and 2")
+	if(any(is.na(mixture[,1]))) stop("NA values are not allowed in mixture column 1")
 	
 	# check that if one is NA, all are NA?
 	

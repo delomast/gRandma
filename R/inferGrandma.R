@@ -23,10 +23,15 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 	useUnsamp <- FALSE
 	if(!is.null(gmaData$unsampledPopsParams)) useUnsamp <- TRUE
 	
-	# need to calc llr for all individuals in the mixture compared to all individuals in the baseline
-	# this is really just a wrapper for subfunctions for each relationship
+	# input checking
+	if(!is.null(crossRecords)) {
+		# make sure all individuals in crossRecords are in the baseline
+		if(any(!(crossRecords[,2] %in% gmaData$baseline[,2]))) stop("Some individuals in crossRecords are not in the baseline")
+		if(any(!(crossRecords[,3] %in% gmaData$baseline[,2]))) stop("Some individuals in crossRecords are not in the baseline")
+		if(any(apply(crossRecords,2, function(x) any(is.na(x))))) stop("NA values are not allowed in crossRecords")
+	}
 	
-	# turn pop names and indiv names into ints for speed and avoid headache of dealing with strings
+	# turn pop names into ints for speed and avoid headache of dealing with strings
 	# 0 index for c++
 	allPops <- unique(gmaData$baseline[,1])
 	popKey <- data.frame(popName = allPops, popInt = 0:(length(allPops)-1), stringsAsFactors = FALSE)
@@ -40,11 +45,9 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 	}
 	cat("\n")
 	
-	if(useUnsamp) {
-		names(gmaData$unsampledPopsParams) <- as.character(popKey[match(names(gmaData$unsampledPopsParams), popKey[,1]),2])
-	}
-	# now we have to take into account cases where some (or all) baseline pops 
-	# don't have "unsampledPopParams"
+	if(useUnsamp) names(gmaData$unsampledPopsParams) <- as.character(popKey[match(names(gmaData$unsampledPopsParams), popKey[,1]),2])
+	
+	# now we have to take into account cases where some (or all) baseline pops don't have "unsampledPopParams"
 	new <- list()
 	for(i in 1:length(allPops)){
 		if(useUnsamp && as.character(i-1) %in% names(gmaData$unsampledPopsParams)){
@@ -54,15 +57,25 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 		}
 	}
 	gmaData$unsampledPopsParams <- new
-	if(!is.null(crossRecords)) crossRecords[,1] <- as.numeric(popKey[match(crossRecords[,1], popKey[,1]),2])
-
+	
+	# turn indiv names into ints
 	indivKey <- data.frame(indivName = c(gmaData$baseline[,2], gmaData$mixture[,1]), 
 								  indivInt = 0:(nrow(gmaData$baseline) + nrow(gmaData$mixture) - 1), stringsAsFactors = FALSE)
+	if(any(table(indivKey$indivName) > 1)) stop("Names of baseline and mixture samples are not unique")
 	gmaData$baseline[,2] <- as.numeric(indivKey[match(gmaData$baseline[,2], indivKey[,1]),2])
 	gmaData$mixture[,1] <- as.numeric(indivKey[match(gmaData$mixture[,1], indivKey[,1]),2])
+
 	if(!is.null(crossRecords)) {
+		crossRecords[,1] <- as.numeric(popKey[match(crossRecords[,1], popKey[,1]),2])
 		crossRecords[,2] <- as.numeric(indivKey[match(crossRecords[,2], indivKey[,1]),2])
 		crossRecords[,3] <- as.numeric(indivKey[match(crossRecords[,3], indivKey[,1]),2])
+		# make sure all pops in crossRecords match pops in baseline
+		tempPop <- rbind(data.frame(pop = crossRecords[,1], id = crossRecords[,2], stringsAsFactors = FALSE),
+							  data.frame(pop = crossRecords[,1], id = crossRecords[,3], stringsAsFactors = FALSE),
+							  	stringsAsFactors = FALSE
+							  )
+		if(any(gmaData$baseline[match(tempPop$id, gmaData$baseline[,2]),1] != tempPop$pop)) stop("Populations of individual in",
+				" crossRecords and the baseline do not all match")
 	}
 
 	# make sure loci are in order in baseline, mixture, genotypeKey, genotypeErrorRates,
