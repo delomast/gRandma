@@ -4,7 +4,7 @@
 \alias{createGmaInput}
 \title{This creates a gmaData structure from user supplied dataframes}
 \usage{
-createGmaInput(baseline, mixture, unsampledPops = NULL,
+createGmaInput(baseline, mixture = NULL, unsampledPops = NULL,
   perSNPerror = NULL, dropoutProb = NULL)
 }
 \arguments{

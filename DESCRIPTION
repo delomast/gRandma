@@ -9,5 +9,6 @@ Description: Inference of grandparentage based on genetic markers,
       namely single nucleotide polymorphisms (SNPs) and microhaplotypes
 License: MIT + file LICENSE
 Imports: Rcpp (>= 1.0.2)
+SystemRequirements: C++11
 LinkingTo: Rcpp
 RoxygenNote: 6.1.1

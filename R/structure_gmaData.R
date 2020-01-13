@@ -21,7 +21,7 @@ construct_grandma <- function(x){
 
 	# do some checking here of required values
 	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys", 
-							"alleleKeys", "baselineParams", "unsampledPopsParams")
+							"alleleKeys", "baselineParams", "unsampledPopsParams", "missingParams")
 	if(sum(names(x) != gmaDataNames) > 0) stop("Wrong names to make a gmaData object")
 	
 	class(x) <- "gmaData"
@@ -77,9 +77,15 @@ print.gmaData <- function(x){
 #' @useDynLib gRandma, .registration=TRUE
 #' @export
 
-createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror = NULL, dropoutProb = NULL){
+createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perSNPerror = NULL, dropoutProb = NULL){
 	
-	#type check
+	if(is.null(mixture)) {
+		mixture <- as.data.frame(matrix(0,0,ncol(baseline) - 1))
+		colnames(mixture)[seq(2, (ncol(mixture) - 1), 2)] <- colnames(baseline)[seq(3, (ncol(baseline) - 1), 2)]
+	} # will this work?
+	
+	
+	# type check
 	if (!is.data.frame(baseline)){
 		warning("Coercing baseline to a dataframe")
 		baseline <- as.data.frame(baseline)
@@ -112,11 +118,13 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 	
 	# set up storage
 	genotypeErrorList <- list() # list of matrices giving P(obs geno | true geno) for each locus
+	missingParams <- list() # list of matrices (one each locus) giving parameters of a beta distribution for missing genotypes
 	genotypeKeyList <- list() # key of genotype code and alleles for each locus
 	alleleKeyList <- list()
 	baselineParams <- list() # list, entry for each population, of lists, for each locus, a named vector giving Dirichlet posterior of
 		# allele frequencies given a 1/N prior, N = number of alleles
 	unsampledPopsParams <- list() # same as baselineParams, but for unsampledPops
+	
 	
 	# initiate storage for different pops
 	basePops <- unique(baseline[,1])
@@ -269,7 +277,17 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 			}
 		}
 		
-		#recode genotypes - 0 index for c++
+		# calculate parameters of beta for whether a genotype is missing or not
+		# posterior with Beta(.5,.5) prior
+		nMiss <- sum(is.na(baseline[,m]), is.na(mixture[,m-1]))
+		nTotal <- nrow(baseline) + nrow(mixture)
+		if(useUnsamp){
+			nMiss <- nMiss + sum(is.na(unsampledPops[,m]))
+			nTotal <- nTotal + nrow(unsampledPops)
+		}
+		missingParams[[mName]] <- c(nMiss, nTotal - nMiss) + .5
+		
+		# recode genotypes - 0 index for c++
 		baseline[,m] <- recodeGenotypes(baseline[,m:(m+1)], genotypeKey) - 1
 		mixture[,m-1] <- recodeGenotypes(mixture[,(m-1):m], genotypeKey) - 1
 		if(useUnsamp){
@@ -315,7 +333,8 @@ createGmaInput <- function(baseline, mixture, unsampledPops = NULL, perSNPerror 
 		genotypeKeys = genotypeKeyList,
 		alleleKeys = alleleKeyList,
 		baselineParams = baselineParams,
-		unsampledPopsParams = unsampledPopsParams
+		unsampledPopsParams = unsampledPopsParams,
+		missingParams = missingParams
 	)
 	
 	return(construct_grandma(gmaData))

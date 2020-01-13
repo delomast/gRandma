@@ -769,3 +769,48 @@ crossRecords <- crossRecords[crossRecords$ind1 %in% basInds & crossRecords$ind2 
 testResults <- inferGrandma(gmaData = gmaInput, relationship = "ssGP", crossRecords = crossRecords,
 				 minLLR = 0, filterLLR = TRUE, MIexcludeProb = 10^-4)
 
+######################################
+######################################
+######################################
+######################################
+######################################
+# Testing error rate estimation procedures
+
+# logBetaBinomPMF(double n, double k, double a, double b)
+a = .01
+b = 9
+exp(logBetaBinomPMF(1, 0, a, b)) + exp(logBetaBinomPMF(1, 1, a, b))
+
+exp(logBetaBinomPMF(1, 0, a, b))
+exp(logBetaBinomPMF(1, 1, a, b))
+
+testErr <- createGmaInput(baseline = baselineIn[,!grepl("Locus_(8|15|122)", colnames(baselineIn))], 
+							  mixture = mixtureIn[1:10,!grepl("Locus_(8|15|122)", colnames(mixtureIn))], 
+							  unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+
+# save.image("testErr.rda")
+# load("testErr.rda")
+
+testErr
+names(testErr)
+testErr$missingParams
+
+testErr$missingParams[[1]][1] <- 3000
+
+sampErrRates <- ERRORssGP(testErr$baselineParams, testErr$baselineParams, testErr$missingParams, 
+			 lapply(testErr$genotypeKey, as.matrix),
+			 testErr$genotypeErrorRates, seq(0,10,1), 10000, 300)
+
+sampErrRates[sampErrRates$Pop == 0,]
+head(sampErrRates)
+
+sqrt(var(c(rep(1, 519), rep(0, 10000 - 519))) / 10000)
+
+testErr2 <- createGmaInput(baseline = baselineIn[,!grepl("Locus_(8|15|122)", colnames(baselineIn))], 
+							  mixture = NULL, 
+							  unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+
+falseGrandma(testErr2, relationship = "ssGP", 
+								 llrToTest = c(1,5,8), N = 1000, seed = NULL)
+falseGrandma(testErr, relationship = "ssGP", 
+								 llrToTest = c(1,5,8), N = 1000, seed = NULL)

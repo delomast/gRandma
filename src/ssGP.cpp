@@ -166,7 +166,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 			}
 			// for(int i=0;i<10;i++) Rcpp::Rcout<<pTotalMI[i]<<"\n"; //testing
 			Rcpp::Rcout<<"The maximum number of Mendalian incompatibilities allowed"<<
-				" is: "<<miLimit<<". This results in the probability of exclusion for a true grandparent pair of: "<<
+				" is: "<<miLimit<<". The probability of exclusion for a true grandparent pair (given no missing genotypes) is estimated as: "<<
 					1 - runningSum<<".\n";
 		} else{
 			Rcpp::Rcout<<"MIexcludeProb was not greater than zero, so likelihoods for all possible combinations"<<
@@ -230,7 +230,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 				double uLLH = 0.0; // log-likelihood unrelated
 				double gpLLH = 0.0; // log-likelihood grandparent pair
 				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ //for each locus
-					//observed genotypes
+					// observed genotypes
 					int obs_gp1 = baselineC[pairs[i][0]][j+2];
 					int obs_gp2 = baselineC[pairs[i][1]][j+2];
 					int obs_d = mixtureC[m][j+1];

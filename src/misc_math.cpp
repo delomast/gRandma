@@ -1,8 +1,11 @@
 // miscellaneous functions performing calculations
+// Enable C++11 via this plugin (Rcpp 0.10.3 or later)
+// [[Rcpp::plugins(cpp11)]]
 
 #include <Rcpp.h>
 #include <math.h>
 #include <vector>
+#include <random>
 #include "misc_math.h"
 
 using namespace std;
@@ -13,10 +16,9 @@ using namespace std;
 // @param a a vector of the parameters (alpha) describing the Dirichlet
  
 double logDirichMultPMF(const vector <double>& k, const vector <double>& a){
-	int numAlpha = a.size();
-	int numK = k.size(); // just prevent compiler warning b/c I am nitpicky
-	if (numK != numAlpha) Rcpp::stop("internal error: k not equal to a in logdirichMultPMF");
+	if (k.size() != a.size()) Rcpp::stop("internal error: k not equal to a in logdirichMultPMF");
 
+	int numAlpha = a.size();
 	double n = 0;
 	for(int i = 0; i < numAlpha; i++) n += k[i];
 	double sumAlpha = 0;	
@@ -55,11 +57,6 @@ double ppoMendelian(const vector <int>& p1, const vector <int>& p2, const vector
 }
 
 /*
-
-// wrote these and then remembered want to make this work for both
-//  SNPs and microhaplotypes, keeping them in for now in case they
-//  turn out to be useful later on
-
 // calculate log of the beta function
 double logBeta(double a, double b) {
 	return lgamma(a) + lgamma(b) - lgamma(a+b);
@@ -76,3 +73,48 @@ double logBetaBinomPMF(double n, double k, double a, double b){
 	return logChoose(n, k) + logBeta(k + a, n - k + b) - logBeta(a, b);
 }
 */
+
+// random sample from categorical distribution
+// items are items to select from, represented by ints
+// probs are relative probabilities (normalized within the function)
+
+int sampleC(const vector <int>& items, const vector <double>& probs, mt19937& rNum) {
+	
+	// input checking and remove items with 0 probability
+	if(items.size() != probs.size()) Rcpp::stop("invalid input to sampleC, dimensions differ");
+	
+	vector <double> newProbs;
+	vector <int> newItems;
+	
+	// now change to section of the interval from 0-cumulSum and remove items with prob of 0
+	double cumulSum = 0;
+	for(int i=0, max = probs.size(); i<max; i++){
+		if(probs[i] < 0) Rcpp::stop("invalid probs to sampleC");
+		if(probs[i] > 0){
+			cumulSum += probs[i];
+			newProbs.push_back(cumulSum);
+			newItems.push_back(items[i]);
+		}
+	}
+	if (newProbs.size() == 0) Rcpp::stop("all 0 probs to sampleC");
+	// end input check
+	
+	// get random uniform
+	uniform_real_distribution <double> rUnif(0.0,cumulSum);
+	double rN = rUnif(rNum);
+	// assign result
+	for(int i=0, max=newProbs.size(); i<max; i++){
+		if(rN < newProbs[i]){
+			return newItems[i];
+		}
+	}
+	Rcpp::stop("internal error in sampleC, no result chosen");
+	return 0;
+}
+
+// n is number of samples
+// ss is sum of squares of samples
+// mean is mean of samples
+double varianceEstim(double n, double ss, double mean){
+	return ((ss / (n - 1)) - ((pow(mean, 2) * n) / (n - 1))) / n;
+}
