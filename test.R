@@ -800,6 +800,15 @@ testErr$missingParams[[1]][1] <- 3000
 sampErrRates <- ERRORssGP(testErr$baselineParams, testErr$baselineParams, testErr$missingParams, 
 			 lapply(testErr$genotypeKey, as.matrix),
 			 testErr$genotypeErrorRates, seq(0,10,1), 10000, 300)
+noMiss <- lapply(testErr$missingParams, function(x) {x[1]=0
+	return(x)})
+
+sampErrRatesNoMiss <- ERRORssGP(testErr$baselineParams, testErr$baselineParams, noMiss, 
+			 lapply(testErr$genotypeKey, as.matrix),
+			 testErr$genotypeErrorRates, seq(0,10,1), 10000, 300)
+summary(sampErrRates$falseNeg - sampErrRatesNoMiss$falseNeg)
+head(sampErrRates)
+head(sampErrRatesNoMiss)
 
 sampErrRates[sampErrRates$Pop == 0,]
 head(sampErrRates)
@@ -814,3 +823,35 @@ falseGrandma(testErr2, relationship = "ssGP",
 								 llrToTest = c(1,5,8), N = 1000, seed = NULL)
 falseGrandma(testErr, relationship = "ssGP", 
 								 llrToTest = c(1,5,8), N = 1000, seed = NULL)
+
+# exactERRORssGP(testErr2$baselineParams,
+#                            testErr2$baselineParams, testErr2$missingParams,
+#                            lapply(testErr2$genotypeKey, as.matrix),
+#                            testErr2$genotypeErrorRates, c(1))
+
+otherPopErr <- otherPopERRORssGP(testErr$baselineParams, testErr$baselineParams, testErr$missingParams, 
+			 lapply(testErr$genotypeKey, as.matrix),
+			 testErr$genotypeErrorRates, 1, 1000, 300)
+
+summary(abs(sapply(testErr$baselineParams$OneEAGL11BCB, function(x) x[1]/sum(x)) - 
+					sapply(testErr$baselineParams$OneEAGL12BCB, function(x) x[1]/sum(x))))
+
+# testing otherPopErr vs falseGrandma when same pop repeated twice
+repBase <- baselineIn[baselineIn[,1] == "OneEAGL11BCB",!grepl("Locus_(8|15|122)", colnames(baselineIn))]
+repBase[,1] <- "duplicate"
+repBase <- rbind(repBase, baselineIn[baselineIn[,1] == "OneEAGL11BCB",!grepl("Locus_(8|15|122)", colnames(baselineIn))])
+testErrRepeat <- createGmaInput(baseline = repBase[,!grepl("Locus_(6|59|77|100|104|116|163|177|186|192|202|212)", colnames(repBase))], 
+							  mixture = NULL, 
+							  unsampledPops = NULL, perSNPerror = snpError, dropoutProb = dropout)
+fGma <- falseGrandma(testErrRepeat, relationship = "ssGP", llrToTest = c(1,5,10), N = 10000, seed = 7)
+
+othPop <- otherPopERRORssGP(testErrRepeat$baselineParams, testErrRepeat$baselineParams, testErrRepeat$missingParams, 
+			 lapply(testErrRepeat$genotypeKey, as.matrix),
+			 testErrRepeat$genotypeErrorRates, c(1,5,10), 10000, 200)
+fGma
+othPop
+# looks good!
+
+fpfnError <- falseGrandma(testErr, "ssGP", c(1,5,8,10), 10000, pairwise = FALSE)
+fpPairwise <- falseGrandma(testErr, "ssGP", c(1,5,8,10), 10000, pairwise = TRUE)
+

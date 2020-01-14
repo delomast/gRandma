@@ -14,7 +14,6 @@ using namespace std;
 //' estimatign error rates for single-sided grandparent pair vs unrelated
 //' Monte Carlo used for estimating false negative
 //' Importance sampling Monte Carlo used for estimating false positive
-//' returning a matrix of descendent, grandparentPopulation, grandparent1, grandparent2, llr
 //' @param baselineParams Dirichlet parameters for allele frequencies
 //' @param unsampledPopParams Dirichlet parameters for allele frequencies
 //' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
@@ -174,8 +173,8 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 		}
 		
 		// inititate results storage for this pop - one entry for each llr
-		vector <double> falsePos (llrToTestC.size(), 0); // number of samples with llr > threshold ?
-		vector <double> falseNeg (llrToTestC.size(), 0); // number of samples with llr < threshold
+		vector <double> falsePos (llrToTestC.size(), 0);
+		vector <double> falseNeg (llrToTestC.size(), 0);
 		vector <double> SSfalsePos (llrToTestC.size(), 0); // sum of squares for variance calcs
 		// don't need sum squares for falseNeg right now b/c all are either 0 or 1 (no importance sampling)
 		

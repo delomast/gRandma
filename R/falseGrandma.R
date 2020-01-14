@@ -12,15 +12,21 @@
 #' @param N the number of Monte Carlo samples to take to estimate the error rates
 #' @param seed a positive integer to use as a seed for random number generation. If \code{NULL}, a seed is 
 #'   chosen based on the current system time 
+#' @param pairwise TRUE to estimate false positive rate for pairwise combinations of the baseline populations.
+#'   In otherwords, the rate at which mixture individuals from one population have llr's equal to or above 
+#'   the threshold when being tested against the baseline of another population.
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), 
-								 llrToTest, N = 10000, seed = NULL){
+								 llrToTest, N = 10000, seed = NULL, pairwise = FALSE){
 	rel <- match.arg(relationship)
 	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
 												 	as.numeric(format(Sys.time(), "%j")) * 
 												 	as.numeric(format(Sys.time(), "%M")))
-	
+	if(seed < 0) {
+		warning("seed must not be negative, setting seed to 0")
+		seed <- 0
+	}
 	useUnsamp <- FALSE
 	if(!is.null(gmaData$unsampledPopsParams)) useUnsamp <- TRUE
 	
@@ -50,18 +56,25 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"),
 	}
 	gmaData$unsampledPopsParams <- new
 	
+	# change things to numeric matrices when pass them to c++
+	gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
+	
 	if(rel == "ssGP"){
-
-		# change things to numeric matrices when pass them to c++
-		gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
-		
-		errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-										gmaData$missingParams, gmaData$genotypeKey,
-                           gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
-
+		if(pairwise){
+			errResults <- otherPopERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+								gmaData$missingParams, gmaData$genotypeKey,
+								 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+		} else {
+			errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+								gmaData$missingParams, gmaData$genotypeKey,
+                     gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+		}
+	} else {
+		stop("This rel not set up at this time")
 	}
 	
 	# turn pop names back to strings
+	if(pairwise) errResults[,2] <- popKey[match(errResults[,2], popKey[,2]),1]
 	errResults[,1] <- popKey[match(errResults[,1], popKey[,2]),1]
 	
 	return(errResults)

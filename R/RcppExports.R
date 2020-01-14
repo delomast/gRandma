@@ -4,7 +4,6 @@
 #' estimatign error rates for single-sided grandparent pair vs unrelated
 #' Monte Carlo used for estimating false negative
 #' Importance sampling Monte Carlo used for estimating false positive
-#' returning a matrix of descendent, grandparentPopulation, grandparent1, grandparent2, llr
 #' @param baselineParams Dirichlet parameters for allele frequencies
 #' @param unsampledPopParams Dirichlet parameters for allele frequencies
 #' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
@@ -18,6 +17,24 @@
 #' @export
 ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed) {
     .Call(`_gRandma_ERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed)
+}
+
+#' estimating false positive error rates for single-sided grandparent pair vs unrelated
+#' with individuls from one population being assigned to a different population
+#' Importance sampling Monte Carlo used for estimating false positive
+#' @param baselineParams Dirichlet parameters for allele frequencies
+#' @param unsampledPopParams Dirichlet parameters for allele frequencies
+#' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
+#' @param llrToTest Vector of llr's to test as threshold values
+#' @param N number of samples to take
+#' @keywords internal
+#' @noRd
+#' @export
+otherPopERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed) {
+    .Call(`_gRandma_otherPopERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed)
 }
 
 #' calculating llr of single-sided grandparent pair vs unrelated
