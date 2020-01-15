@@ -14,6 +14,10 @@ using namespace std;
 //' estimating false positive error rates for single-sided grandparent pair vs unrelated
 //' with individuls from one population being assigned to a different population
 //' Importance sampling Monte Carlo used for estimating false positive
+//' 
+//' 
+//' This version uses trios from the current "baseline" pop as the importance sampling distribution
+//' 
 //' @param baselineParams Dirichlet parameters for allele frequencies
 //' @param unsampledPopParams Dirichlet parameters for allele frequencies
 //' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
@@ -22,6 +26,7 @@ using namespace std;
 //'   values are probability
 //' @param llrToTest Vector of llr's to test as threshold values
 //' @param N number of samples to take
+//' @param skipBaseline added unsampled pops to skip as baseline
 //' @keywords internal
 //' @noRd
 //' @export
@@ -31,7 +36,7 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
                            Rcpp::List genotypeKey,
                            Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest,
                            int N,
-                           int seed
+                           int seed, Rcpp::NumericVector skipBaseline
 ){
 	//////////////////////
 	// first, turn all inputs into non-Rcpp c++ classes
@@ -60,6 +65,9 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 	vector <double> llrToTestC;
 	for(int i = 0, max = llrToTest.length(); i < max; i++) llrToTestC.push_back(llrToTest[i]);
 	
+	vector <int> skipBaselineC;
+	for(int i = 0, max = skipBaseline.length(); i < max; i++) skipBaselineC.push_back(skipBaseline[i]);
+	
 	// end conversion of types
 	////////////////////
 
@@ -76,7 +84,6 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 		randMissing.push_back(tempDist);
 	}
 	
-	// since using true trio as importance sampling distribution, can calculate pos and neg at the same time
 	vector <int> popResults; // pop that trios are simulated from
 	vector <int> popAssign; // pop that offspring are assigned to
 	vector <double> llrRecord;
@@ -92,7 +99,7 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 		vector <vector <double> > CORR_lGenos_base;
 		vector <vector <double> > CORR_lGenos_unsamp;
 
-		for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ // for each locus
+		for(int i = 0; i < nLoci; i++){ // for each locus
 			// baselineParamsC[pop][i] are the alpha values for the baseline pop
 			// unsampledPopParamsC[pop][i] are the alpha values for the corresponding unsampled pop
 			// genotypeKeyC[i] is the key for the locus i
@@ -107,6 +114,38 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 			}
 			CORR_lGenos_base.push_back(tempBase);
 			CORR_lGenos_unsamp.push_back(tempUnsamp);
+		}
+		
+		/*
+		 * calculate genotype likelihoods for a descendant of this population sampled at random
+		 * Index 1 is locus
+		 * Index 2 is genotype
+		 * Value is LOG-likelihood
+		 */
+		vector <vector <double> > lGenos_randomDescendant;
+		for(int i = 0; i < nLoci; i++){
+			vector <double> tempLH;
+			for(int j = 0, max2 = genotypeKeyC[i].size(); j < max2; j++){
+				vector <double> k1 (baselineParamsC[pop][i].size(), 0);
+				vector <double> k2 (baselineParamsC[pop][i].size(), 0);
+				k1[genotypeKeyC[i][j][0]]++;
+				k2[genotypeKeyC[i][j][1]]++;
+				if(genotypeKeyC[i][j][0] == genotypeKeyC[i][j][1]){ // alleles are the same
+					// prob sample allele from both
+					tempLH.push_back(logDirichMultPMF(k1, baselineParamsC[pop][i]) + 
+						logDirichMultPMF(k2, unsampledPopParamsC[pop][i])
+					);
+				} else {
+					// prob sample allele1 from one, allele2 from other + prob of vice versa
+					tempLH.push_back(log(
+						exp(logDirichMultPMF(k1, baselineParamsC[pop][i]) + 
+						logDirichMultPMF(k2, unsampledPopParamsC[pop][i])) + 
+						exp(logDirichMultPMF(k2, baselineParamsC[pop][i]) + 
+						logDirichMultPMF(k1, unsampledPopParamsC[pop][i]))
+					));
+				}
+			}
+			lGenos_randomDescendant.push_back(tempLH);
 		}
 
 		/*	
@@ -140,15 +179,24 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 		createOBSvector(CORR_lGenos_ssGP, genotypeErrorRatesC, CORR_lGenos_ssGP_OBS,
                   CORR_lGenos_base, CORR_lGenos_unsamp, CORR_lGenos_Unrelated_OBS);
 		
-		for(int pop2 = 0, max = baselineParamsC.size(); pop2 < max; pop2++){
+		for(int pop2 = 0, maxp2 = baselineParamsC.size(); pop2 < maxp2; pop2++){
 			if(pop2 == pop) continue;
+			bool skipBaseBool = false;
+			for(int i = 0, maxSkip = skipBaselineC.size(); i < maxSkip; i++){
+				if(pop2 == skipBaselineC[i]){
+					skipBaseBool = true;
+					break;
+				}
+			}
+			if (skipBaseBool) continue;
+			
 			Rcpp::Rcout<<"Calculating error with baseline population "<<pop2 + 1<<"\n";
 			// calculate genotype log-likelihoods from random sampled genotype
 			// first index is locus, second is genotype, value is LOG-likelihood
 			vector <vector <double> > lGenos_base;
 			vector <vector <double> > lGenos_unsamp;
 	
-			for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ // for each locus
+			for(int i = 0, max3 = genotypeKeyC.size(); i < max3; i++){ // for each locus
 				// baselineParamsC[pop2][i] are the alpha values for the baseline pop
 				// unsampledPopParamsC[pop2][i] are the alpha values for the corresponding unsampled pop
 				// genotypeKeyC[i] is the key for the locus i
@@ -208,9 +256,9 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 				vector <double> tempProb;
 				vector <vector <int> > tempGenos;
 				int trioIndex = 0;
-				for(int gpa = 0, max = lGenos_ssGP_OBS[i].size(); gpa < max; gpa++){
-					for(int gma = 0; gma < max; gma++){
-						for(int d = 0; d < max; d++){
+				for(int gpa = 0, maxGP = lGenos_ssGP_OBS[i].size(); gpa < maxGP; gpa++){
+					for(int gma = 0; gma < maxGP; gma++){
+						for(int d = 0; d < maxGP; d++){
 							tempProb.push_back(exp(lGenos_ssGP_OBS[i][gpa][gma][d]));
 							tempCombo.push_back(trioIndex);
 							vector <int> tempVec (3,-9);
@@ -226,6 +274,15 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 				prob.push_back(tempProb);
 				trioGenosLookup.push_back(tempGenos);
 			}
+			
+			/*
+			 * making reference "table" of correction ratio lGenos based on observed genotypes
+			 * with NO missing data
+			 * Indices are: locus, gp1 observed geno, gp2 observed geno, d observed geno
+			 * value is LOG-likelihood
+			 */
+			vector <vector <vector <vector <double> > > > CORR_lGenos_OBS;
+			create_CORR_OBSvector(genotypeErrorRatesC, lGenos_randomDescendant, lGenos_base, CORR_lGenos_OBS);
 			
 			// inititate results storage for this pop - one entry for each llr
 			vector <double> falsePos (llrToTestC.size(), 0);
@@ -253,7 +310,8 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 				// calc LLR
 				double uLLH = 0.0;
 				double gpLLH = 0.0;
-				double CORR_uLLH = 0.0; // for correction ratio for importance sampling
+				double CORR_uLLH = 0.0; // for correction ratio for importance sampling - this is prob of sampling "grandparents" from 
+												// the current "baseline" pop and "descendant" of the current descendant pop
 				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ //for each locus
 					// observed genotypes
 					int obs_gp1 = gpaGenos[j];
@@ -292,7 +350,7 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 									gp_likelihood += lGenos_ssGP[j][gp1][gp2][d] *
 										pOA_gp1 * pOA_gp2 * pOA_d;
 									// correction for importance sampling
-									CORR_u_likelihood += exp(CORR_lGenos_base[j][gp1] + CORR_lGenos_base[j][gp2] + CORR_lGenos_unsamp[j][d]) * 
+									CORR_u_likelihood += exp(lGenos_base[j][gp1] + lGenos_base[j][gp2] + lGenos_randomDescendant[j][d]) * 
 										 pOA_gp1 * pOA_gp2 * pOA_d;
 								}
 							}
@@ -303,19 +361,18 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 					} else { // no missing genotypes
 						uLLH += lGenos_Unrelated_OBS[j][obs_gp1][obs_gp2][obs_d];
 						gpLLH += lGenos_ssGP_OBS[j][obs_gp1][obs_gp2][obs_d];
-						CORR_uLLH += CORR_lGenos_Unrelated_OBS[j][obs_gp1][obs_gp2][obs_d];
+						CORR_uLLH += CORR_lGenos_OBS[j][obs_gp1][obs_gp2][obs_d];
 					}
 				}
-				double llr = gpLLH - uLLH;
 				// determine number under and over threshold
-				for(int i = 0, max = llrToTestC.size(); i < max; i++){
-					if(llr >= llrToTestC[i]){
-						falsePos[i] += exp(CORR_uLLH - gpLLH); // correction for sampling distribution
-						SSfalsePos[i] += pow(exp(-llr), 2);
+				for(int i = 0, max2 = llrToTestC.size(); i < max2; i++){
+					if((gpLLH - uLLH) >= llrToTestC[i]){
+						falsePos[i] += exp(CORR_uLLH - gpLLH); // correction for sampling distribution - this is wrong
+						SSfalsePos[i] += pow(exp(CORR_uLLH - gpLLH), 2);
 					}
 				}
 			} // end for N
-			for(int i = 0, max = llrToTestC.size(); i < max; i++){
+			for(int i = 0, max2 = llrToTestC.size(); i < max2; i++){
 				double fpMean = falsePos[i] / N; // need for variance calc
 
 				popResults.push_back(pop);
@@ -330,7 +387,7 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 	} // end for pop
 
 	// organize as a DataFrame and return	
-	Rcpp::DataFrame results = Rcpp::DataFrame::create(Rcpp::Named("Pop_offspring") = popResults,
+	Rcpp::DataFrame results = Rcpp::DataFrame::create(Rcpp::Named("Pop_descendant") = popResults,
                                                    Rcpp::Named("Pop_baseline") = popAssign,
                                                    Rcpp::Named("llrThreshold") = llrRecord,
                                                    Rcpp::Named("falsePos") = falsePosAll,

@@ -855,3 +855,12 @@ othPop
 fpfnError <- falseGrandma(testErr, "ssGP", c(1,5,8,10), 10000, pairwise = FALSE)
 fpPairwise <- falseGrandma(testErr, "ssGP", c(1,5,8,10), 10000, pairwise = TRUE)
 
+load("S:/Eagle Fish Genetics Lab/Tom/gRandma demo/testerr.rda")
+
+gmaInput3 <- gmaInput2
+gmaInput3$unsampledPopsParams <- gmaInput3$baselineParams[1]
+gmaInput4 <- gmaInput3
+names(gmaInput4$baselineParams)[2] <- "UnsampledPop_OmyDWOR19S"
+
+falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 1000, pairwise = FALSE)
+falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 10000, pairwise = TRUE)

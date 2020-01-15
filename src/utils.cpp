@@ -251,3 +251,56 @@ void createOBSvector(const vector <vector <vector <vector <double> > > >& lGenos
 		}
 	}
 }
+
+
+// calculate genotype LOG - likelihoods for three unrelated individuals:
+//   two from one pop and one a descendant of another pop
+//	given OBSERVED genotypes - but only if NO MISSING genotypes in the trio
+// This is used in "otherPopERRORssGP"
+void create_CORR_OBSvector(const vector< vector < vector <double> > >& genotypeErrorRatesC, 
+                           const vector <vector <double> >& lGenos_randomDescendant,
+                          const vector <vector <double> >& lGenos_base,
+                          vector <vector <vector <vector <double> > > >& CORR_lGenos_OBS // output to this
+                          ){
+	// initialize with 0's - note that 0's will cause problems if not replaced b/c these are log-likelihoods...
+	for(int i = 0, max = genotypeErrorRatesC.size(); i < max; i++){ //for each locus
+		vector <vector <vector <double> > > tempLocus;
+		for(int gp1 = 0, max2 = genotypeErrorRatesC[i].size(); gp1 < max2; gp1++){ //for each gp1 genotype
+			vector <vector <double> > tempP1;
+			for(int gp2 = 0; gp2 < max2; gp2++){ //for each gp2 genotype
+				vector <double> tempP2 (max2,0.0);
+				tempP1.push_back(tempP2);
+			}
+			tempLocus.push_back(tempP1);
+		}
+		CORR_lGenos_OBS.push_back(tempLocus);
+	}
+	
+	// calculate for all loci and observed genotype combinations
+	for(int i = 0, max = genotypeErrorRatesC.size(); i < max; i++){
+		for(int obs_gp1 = 0, max3 = genotypeErrorRatesC[i].size(); obs_gp1 < max3; obs_gp1++){
+			for(int obs_gp2 = obs_gp1; obs_gp2 < max3; obs_gp2++){
+				for(int obs_d = 0; obs_d < max3; obs_d++){
+					double u_likelihood = 0.0;
+					// marginalize over all possible true genotype combinations
+					for(int gp1 = 0; gp1 < max3; gp1++){
+						for(int gp2 = 0; gp2 < max3; gp2++){
+							for(int d = 0; d < max3; d++){
+								
+								u_likelihood += exp(lGenos_base[i][gp1] + lGenos_base[i][gp2] + 
+										lGenos_randomDescendant[i][d]) * 
+									genotypeErrorRatesC[i][gp1][obs_gp1] * 
+									genotypeErrorRatesC[i][gp2][obs_gp2] * 
+									genotypeErrorRatesC[i][d][obs_d];
+							}
+						}
+					}
+					CORR_lGenos_OBS[i][obs_gp1][obs_gp2][obs_d] = log(u_likelihood);
+					if(obs_gp1 != obs_gp2){
+						CORR_lGenos_OBS[i][obs_gp2][obs_gp1][obs_d] = log(u_likelihood);
+					}
+				}
+			}
+		}
+	}
+}

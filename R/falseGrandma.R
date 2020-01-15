@@ -28,16 +28,38 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"),
 		seed <- 0
 	}
 	useUnsamp <- FALSE
-	if(!is.null(gmaData$unsampledPopsParams)) useUnsamp <- TRUE
+	skipBaseline <- c() # so unsampled pops aren't tested as a baseline
+	if(!is.null(gmaData$unsampledPopsParams)){
+		useUnsamp <- TRUE
+		if(pairwise){
+			# need to perform pairwise with unsampled pops
+			addedUnsampledPopsNames <- paste0("UnsampledPop_", names(gmaData$unsampledPopsParams))
+			# just in case there is already a pop with that name
+			index <- 1
+			while(any(addedUnsampledPopsNames %in% names(gmaData$baselineParams))){
+				addedUnsampledPopsNames[addedUnsampledPopsNames %in% names(gmaData$baselineParams)] <-
+					paste0(addedUnsampledPopsNames[addedUnsampledPopsNames %in% names(gmaData$baselineParams)],
+							 "_added_", index)
+				index <- index + 1
+			}
+			rm(index)
+			addedUPparams <- gmaData$unsampledPopsParams
+			names(addedUPparams) <- addedUnsampledPopsNames
+			gmaData$baselineParams <- c(gmaData$baselineParams, addedUPparams)
+			skipBaseline <- addedUnsampledPopsNames
+		}
+	}
 	
 	# turn pop names into ints for speed and avoid headache of dealing with strings
 	# 0 index for c++
-	allPops <- unique(gmaData$baseline[,1])
+	allPops <- names(gmaData$baselineParams)
 	popKey <- data.frame(popName = allPops, popInt = 0:(length(allPops)-1), stringsAsFactors = FALSE)
 	names(gmaData$baselineParams) <- as.character(popKey[match(names(gmaData$baselineParams), popKey[,1]),2])
 	gmaData$baselineParams <- gmaData$baselineParams[order(as.numeric(names(gmaData$baselineParams)))]
+	if(length(skipBaseline) > 0) skipBaseline <- popKey[match(skipBaseline, popKey[,1]),2]
+	skipBaseline <- as.numeric(skipBaseline)
 	
-	cat("\nBaseline populations will be evaluated in the following order:\n")
+	cat("\nPopulations will be evaluated in the following order:\n")
 	for(i in 1:nrow(popKey)){
 		cat("\t", i, popKey[i,1], "\n")
 	}
@@ -62,8 +84,8 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"),
 	if(rel == "ssGP"){
 		if(pairwise){
 			errResults <- otherPopERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-								gmaData$missingParams, gmaData$genotypeKey,
-								 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+							gmaData$missingParams, gmaData$genotypeKey,
+							 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
 		} else {
 			errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 								gmaData$missingParams, gmaData$genotypeKey,

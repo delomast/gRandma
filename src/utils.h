@@ -28,5 +28,10 @@ void createOBSvector(const std::vector <std::vector <std::vector <std::vector <d
                           const std::vector <std::vector <double> >& lGenos_base,
                           const std::vector <std::vector <double> >& lGenos_unsamp,
                           std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_Unrelated_OBS);
+void create_CORR_OBSvector(const std::vector< std::vector < std::vector <double> > >& genotypeErrorRatesC, 
+                           const std::vector <std::vector <double> >& lGenos_randomDescendant,
+                          const std::vector <std::vector <double> >& lGenos_base,
+                          std::vector <std::vector <std::vector <std::vector <double> > > >& CORR_lGenos_OBS
+                          );
 
 #endif

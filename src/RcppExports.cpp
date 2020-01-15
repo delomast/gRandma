@@ -24,8 +24,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // otherPopERRORssGP
-Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed);
-RcppExport SEXP _gRandma_otherPopERRORssGP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP) {
+Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed, Rcpp::NumericVector skipBaseline);
+RcppExport SEXP _gRandma_otherPopERRORssGP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP, SEXP skipBaselineSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -37,7 +37,8 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
     Rcpp::traits::input_parameter< int >::type N(NSEXP);
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(otherPopERRORssGP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed));
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type skipBaseline(skipBaselineSEXP);
+    rcpp_result_gen = Rcpp::wrap(otherPopERRORssGP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, skipBaseline));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -64,7 +65,7 @@ END_RCPP
 
 static const R_CallMethodDef CallEntries[] = {
     {"_gRandma_ERRORssGP", (DL_FUNC) &_gRandma_ERRORssGP, 8},
-    {"_gRandma_otherPopERRORssGP", (DL_FUNC) &_gRandma_otherPopERRORssGP, 8},
+    {"_gRandma_otherPopERRORssGP", (DL_FUNC) &_gRandma_otherPopERRORssGP, 9},
     {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 10},
     {NULL, NULL, 0}
 };

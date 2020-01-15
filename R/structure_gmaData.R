@@ -33,11 +33,11 @@ construct_grandma <- function(x){
 #' @export
 print.gmaData <- function(x){
 	cat("\ngmaData object with\n\t")
-	cat(length(unique(x$baseline[,1])), " baseline population(s)\n\t")
-	if(is.null(x$unsampledPops)){
+	cat(length(x$baselineParams), " baseline population(s)\n\t")
+	if(is.null(x$unsampledPopsParams)){
 		cat("No unsampledPops\n\t")
 	} else{
-		cat(length(unique(x$unsampledPops[,1])), " unsampled population(s)\n\t")
+		cat(length(x$unsampledPopsParams), " unsampled population(s)\n\t")
 	}
 	cat(nrow(x$mixture), " mixture individuals\n\t")
 	cat(length(x$genotypeErrorRates), " loci\n")
