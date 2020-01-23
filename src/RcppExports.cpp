@@ -5,6 +5,24 @@
 
 using namespace Rcpp;
 
+// ERRORsP
+Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed);
+RcppExport SEXP _gRandma_ERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type missingParams(missingParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
+    Rcpp::traits::input_parameter< int >::type N(NSEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    rcpp_result_gen = Rcpp::wrap(ERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ERRORssGP
 Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed);
 RcppExport SEXP _gRandma_ERRORssGP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP) {
@@ -42,6 +60,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// sP
+Rcpp::DataFrame sP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, double saveLLR, double MIexcludeProb, bool filterLLR);
+RcppExport SEXP _gRandma_sP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP saveLLRSEXP, SEXP MIexcludeProbSEXP, SEXP filterLLRSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type baseline(baselineSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericMatrix >::type mixture(mixtureSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
+    Rcpp::traits::input_parameter< double >::type saveLLR(saveLLRSEXP);
+    Rcpp::traits::input_parameter< double >::type MIexcludeProb(MIexcludeProbSEXP);
+    Rcpp::traits::input_parameter< bool >::type filterLLR(filterLLRSEXP);
+    rcpp_result_gen = Rcpp::wrap(sP(baseline, mixture, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates, saveLLR, MIexcludeProb, filterLLR));
+    return rcpp_result_gen;
+END_RCPP
+}
 // ssGP
 Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture, Rcpp::NumericMatrix crossRecords, Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, double saveLLR, double MIexcludeProb, bool filterLLR);
 RcppExport SEXP _gRandma_ssGP(SEXP baselineSEXP, SEXP mixtureSEXP, SEXP crossRecordsSEXP, SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP saveLLRSEXP, SEXP MIexcludeProbSEXP, SEXP filterLLRSEXP) {
@@ -64,8 +101,10 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
+    {"_gRandma_ERRORsP", (DL_FUNC) &_gRandma_ERRORsP, 8},
     {"_gRandma_ERRORssGP", (DL_FUNC) &_gRandma_ERRORssGP, 8},
     {"_gRandma_otherPopERRORssGP", (DL_FUNC) &_gRandma_otherPopERRORssGP, 9},
+    {"_gRandma_sP", (DL_FUNC) &_gRandma_sP, 9},
     {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 10},
     {NULL, NULL, 0}
 };

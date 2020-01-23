@@ -679,12 +679,18 @@ system.time(results2 <- inferGrandma(test, relationship = "ssGP", crossRecords =
 # even even newer: .39 !!!!!!!!!!!!
 
 results2 <- inferGrandma(test, relationship = "ssGP", crossRecords = crossRec)
-
+test$baseline <- test$baseline[!duplicated(test$baseline[,2]),]
+test$baseline <- unique(test$baseline)
+crossRec[,1] <- test$baseline[match(crossRec[,2], test$baseline[,2]),1]
+test$baseline[128,1:3]
+crossRec[crossRec[,3] == "OneEAGL11BCB_0329",]
+crossRec <- crossRec[substr(crossRec[,2], 1, 12) == substr(crossRec[,3], 1, 12),]
+# OneEAGL11BCB_1080
 identical(results, results2)
 all.equal(results, results2)
 table(test$baseline[,1])
 
-mapply(identical, results, results2)
+mapply(identical, results[-21,], results2)
 mapply(all.equal, results, results2)
 cbind(results$llr, results2$llr)
 mapply(identical, results$llr, results2$llr)
@@ -864,3 +870,15 @@ names(gmaInput4$baselineParams)[2] <- "UnsampledPop_OmyDWOR19S"
 
 falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 1000, pairwise = FALSE)
 falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 10000, pairwise = TRUE)
+
+
+spResults <- inferGrandma(test, relationship = "sP", filterLLR = FALSE)
+
+# OneEAGL17BCB_0013 OneEAGL11BCB OneEAGL11BCB_0031
+results2
+head(knownGPs)
+# seems to be working, need to test with known parent offspring pairs
+
+errResSP <- falseGrandma(testErr2, relationship = "sP", 
+								 llrToTest = c(1,5,8), N = 10000, seed = NULL)
+# may benefit from importance sampling for false negative?

@@ -17,7 +17,7 @@
 #'   the threshold when being tested against the baseline of another population.
 #' 
 #' @export
-falseGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), 
+falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
 								 llrToTest, N = 10000, seed = NULL, pairwise = FALSE){
 	rel <- match.arg(relationship)
 	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
@@ -90,6 +90,14 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"),
 			errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 								gmaData$missingParams, gmaData$genotypeKey,
                      gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+		}
+	} else if(rel == "sP"){
+		if(pairwise){
+			stop("This option not set up at this time")
+		} else {
+			errResults <- ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+					gmaData$missingParams, gmaData$genotypeKey,
+            gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
 		}
 	} else {
 		stop("This rel not set up at this time")

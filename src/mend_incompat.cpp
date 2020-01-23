@@ -50,7 +50,7 @@ void calcProbMIperLocus(const vector <vector <vector <int> > >& genotypeKeyC,
 	
 }
 
-// calculate the probability of sum(MI) = x | true grandparents
+// calculate the probability of sum(MI) = x | true relationship
 void calcProbSumMI(const vector <double>& pMI, vector <double>& pTotalMI){
 	pTotalMI[0] = 1; // start at 0
 	for(int i = 0, max = pMI.size(); i < max; i++){ // for all loci
@@ -65,3 +65,45 @@ void calcProbSumMI(const vector <double>& pMI, vector <double>& pTotalMI){
 		for(int j = 0; j < (i+2); j++) pTotalMI[j] = tempVec[j];
 	}
 }
+
+//////////////////////
+//////////////////////
+// begin single parent MI functions
+//////////////////////
+//////////////////////
+
+// at each locus, calculate the probability of a MI | true grandparents
+void calcProbMIperLocus_sP(const vector <vector <vector <int> > >& genotypeKeyC,
+                        const vector< vector < vector <double> > >& genotypeErrorRatesC,
+                        const vector <vector <vector <double> > >& lGenos_sP,
+                        vector <double>& pMI){
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){
+		// summing accross all possible obs and true, calculate
+		// P(obs, true, MI | true parent) = P(MI|o)P(o|t)P(t|true parent)
+		for(int p1 = 0, max3 = genotypeKeyC[i].size(); p1 < max3; p1++){ // for all possible OBS genotypes
+			for(int d = 0; d < max3; d++){ 
+				//check if observed MI
+				if(!noAllelesInCommonSP(
+					genotypeKeyC[i][p1], // p1 genotype as vector of alleles
+					genotypeKeyC[i][d] // d genotype as vector of alleles
+					)
+				) continue;
+				for(int p1T = 0; p1T < max3; p1T++){ // for all possible TRUE genotypes
+					for(int dT = 0; dT < max3; dT++){
+						// make sure this is a valid genotype for a trio - must have at least one allele inherited
+						if(noAllelesInCommonSP(
+							genotypeKeyC[i][p1T], // p1 genotype as vector of alleles
+							genotypeKeyC[i][dT] // d genotype as vector of alleles
+							)
+						) continue;
+						// P(MI|o)P(o|t)P(t|true parent)
+						// P(MI|o) = 1 b/c checked if observed MI above
+						pMI[i] += genotypeErrorRatesC[i][p1T][p1] * 
+							genotypeErrorRatesC[i][dT][d] * lGenos_sP[i][p1T][dT];
+					}
+				}
+			}
+		}
+	}
+}
+

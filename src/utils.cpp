@@ -156,7 +156,6 @@ void createSSGPvector(const vector <vector <vector <int> > >& genotypeKeyC,
 		for(int gp1 = 0, max2 = genotypeKeyC[i].size(); gp1 < max2; gp1++){ //for each gp1 genotype
 			for(int gp2 = gp1; gp2 < max2; gp2++){ //for each gp2 genotype
 				for(int d = 0; d < max2; d++){ //for each offspring genotype
-					double tempLH = exp(lGenos_base[i][gp1] + lGenos_base[i][gp2]);
 					double pInherit0, pInherit1;
 					// calculate prob of inheriting each allele from gps
 					pInherit0 = ((genotypeKeyC[i][d][0] == genotypeKeyC[i][gp1][0]) + 
@@ -168,7 +167,7 @@ void createSSGPvector(const vector <vector <vector <int> > >& genotypeKeyC,
 						(genotypeKeyC[i][d][1] == genotypeKeyC[i][gp2][0]) + 
 						(genotypeKeyC[i][d][1] == genotypeKeyC[i][gp2][1])) / 4.0;
 					if(pInherit0 == 0 && pInherit1 == 0) continue; // if MI, then just leave as 0
-					
+					double tempLH = exp(lGenos_base[i][gp1] + lGenos_base[i][gp2]);
 					vector <double> k (unsampledPopParamsC[pop][i].size(), 0);
 					k[genotypeKeyC[i][d][0]] = 1;
 					if(genotypeKeyC[i][d][0] == genotypeKeyC[i][d][1]){
@@ -304,3 +303,120 @@ void create_CORR_OBSvector(const vector< vector < vector <double> > >& genotypeE
 		}
 	}
 }
+
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+// begin utility functions for single parent
+//////////////////////////////////////////////////
+//////////////////////////////////////////////////
+
+// calculate genotype likelihoods from parent - offspring relationship
+// given TRUE genotypes
+void createSPvector(const vector <vector <vector <int> > >& genotypeKeyC, 
+                      const  vector <vector <double> >& lGenos_base, 
+                      const vector <vector <vector <double> > >& unsampledPopParamsC,
+                      const int pop,
+                      vector <vector <vector <double> > >& lGenos_sP){
+		
+	// initialize with 0's
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ //for each locus
+		vector <vector <double> > tempLocus;
+		for(int p1 = 0, max2 = genotypeKeyC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			vector <double> tempP1 (max2,0.0);
+			tempLocus.push_back(tempP1);
+		}
+		lGenos_sP.push_back(tempLocus);
+	}
+	
+	// now calculate likelihoods: P(p1|baselineParams)P(y|p1, unsampledPopParams)
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ //for each locus
+		for(int p1 = 0, max2 = genotypeKeyC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			for(int d = 0; d < max2; d++){ //for each offspring genotype
+				double pInherit0, pInherit1;
+				// calculate prob of inheriting each allele from p1
+				pInherit0 = ((genotypeKeyC[i][d][0] == genotypeKeyC[i][p1][0]) + 
+					(genotypeKeyC[i][d][0] == genotypeKeyC[i][p1][1])) / 2.0;
+				pInherit1 = ((genotypeKeyC[i][d][1] == genotypeKeyC[i][p1][0]) + 
+					(genotypeKeyC[i][d][1] == genotypeKeyC[i][p1][1])) / 2.0;
+				if(pInherit0 == 0 && pInherit1 == 0) continue; // if MI, then just leave as 0
+				double tempLH = exp(lGenos_base[i][p1]);
+				vector <double> k (unsampledPopParamsC[pop][i].size(), 0);
+				k[genotypeKeyC[i][d][0]] = 1;
+				if(genotypeKeyC[i][d][0] == genotypeKeyC[i][d][1]){
+					// P(p1) * prob allele from unsampled pop * prob allele from p1
+					tempLH *= exp(logDirichMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit0;
+				} else {
+					vector <double> k2 (unsampledPopParamsC[pop][i].size(), 0);
+					k2[genotypeKeyC[i][d][1]] = 1;
+					// P(p1) * (prob allele1 from unsampled pop * prob allele2 from p1 +
+					// prob allele2 from unsampled pop * prob allele1 from p1)
+					tempLH *= (exp(logDirichMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit1) +
+						(exp(logDirichMultPMF(k2, unsampledPopParamsC[pop][i])) * pInherit0);
+				}
+				
+				lGenos_sP[i][p1][d] = tempLH;
+			}
+		}
+	}
+}
+
+// calculate genotype LOG - likelihoods for parent - offspring relationship
+// and LOG - likelihoods for being unrelated
+//	given OBSERVED genotypes - but only if NO MISSING genotypes
+void createSP_OBSvector(const vector <vector <vector <double> > >& lGenos_sP, 
+                          const vector< vector < vector <double> > >& genotypeErrorRatesC, 
+                          vector <vector <vector <double> > >& lGenos_sP_OBS,
+                          const vector <vector <double> >& lGenos_base,
+                          const vector <vector <double> >& lGenos_unsamp,
+                          vector <vector <vector <double> > >& lGenos_Unrelated_OBS
+                          ){
+	// initialize with 0's - note that 0's will cause problems if not replaced b/c these are log-likelihoods...
+	for(int i = 0, max = genotypeErrorRatesC.size(); i < max; i++){ //for each locus
+		vector <vector <double> > tempLocus;
+		for(int p1 = 0, max2 = genotypeErrorRatesC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			vector <double> tempP1 (max2,0.0);
+			tempLocus.push_back(tempP1);
+		}
+		lGenos_sP_OBS.push_back(tempLocus);
+		lGenos_Unrelated_OBS.push_back(tempLocus);
+	}
+
+	// calculate for all loci and observed genotype combinations
+	for(int i = 0, max = genotypeErrorRatesC.size(); i < max; i++){
+		for(int obs_p1 = 0, max3 = genotypeErrorRatesC[i].size(); obs_p1 < max3; obs_p1++){
+			for(int obs_d = 0; obs_d < max3; obs_d++){
+				double p_likelihood = 0.0;
+				double u_likelihood = 0.0;
+				// marginalize over all possible true genotype combinations
+				for(int p1 = 0; p1 < max3; p1++){
+					for(int d = 0; d < max3; d++){
+						p_likelihood += lGenos_sP[i][p1][d] *
+							genotypeErrorRatesC[i][p1][obs_p1] * 
+							genotypeErrorRatesC[i][d][obs_d];
+						u_likelihood += exp(lGenos_base[i][p1] + lGenos_unsamp[i][d]) * 
+							genotypeErrorRatesC[i][p1][obs_p1] * 
+							genotypeErrorRatesC[i][d][obs_d];
+					}
+				}
+				lGenos_sP_OBS[i][obs_p1][obs_d] = log(p_likelihood);
+				lGenos_Unrelated_OBS[i][obs_p1][obs_d] = log(u_likelihood);
+			}
+		}
+	}
+}
+
+// determine whether there are any alleles in common between the two alleles in
+//   the potential parent (p1) and a potential descendant (d). This
+//   is only for one locus. Returns true if no allles are in common (ie a MI),
+//   and false if there are one or more alleles in common.
+// @param p1 genotype as vector of alleles
+// @param d genotype as vector of alleles
+
+bool noAllelesInCommonSP(const vector <int>& p1, const vector <int>& d){
+	if(d[0] == p1[0] || d[0] == p1[1] || d[1] == p1[0] || d[1] == p1[1]){
+		return false;
+	} else {
+		return true;
+	}
+}
+

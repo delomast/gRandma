@@ -33,5 +33,17 @@ void create_CORR_OBSvector(const std::vector< std::vector < std::vector <double>
                           const std::vector <std::vector <double> >& lGenos_base,
                           std::vector <std::vector <std::vector <std::vector <double> > > >& CORR_lGenos_OBS
                           );
+void createSPvector(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC, 
+                      const  std::vector <std::vector <double> >& lGenos_base, 
+                      const std::vector <std::vector <std::vector <double> > >& unsampledPopParamsC,
+                      const int pop,
+                      std::vector <std::vector <std::vector <double> > >& lGenos_sP);
+void createSP_OBSvector(const std::vector <std::vector <std::vector <double> > >& lGenos_sP, 
+                          const std::vector< std::vector < std::vector <double> > >& genotypeErrorRatesC, 
+                          std::vector <std::vector <std::vector <double> > >& lGenos_sP_OBS,
+                          const std::vector <std::vector <double> >& lGenos_base,
+                          const std::vector <std::vector <double> >& lGenos_unsamp,
+                          std::vector <std::vector <std::vector <double> > >& lGenos_Unrelated_OBS);
+bool noAllelesInCommonSP(const std::vector <int>& p1, const std::vector <int>& d);
 
 #endif

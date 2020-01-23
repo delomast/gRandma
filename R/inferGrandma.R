@@ -16,7 +16,7 @@
 #'   Mendelian incompatibilities. If \code{0}, then no filtering of potential grandparent pairs is performed
 #'   based on Mendelian incompatibilities.
 #' @export
-inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), crossRecords = NULL, minLLR = 0,
+inferGrandma <- function(gmaData, relationship = c("ssGP", "sP"), crossRecords = NULL, minLLR = 0,
 								 filterLLR = TRUE, MIexcludeProb = .0001){
 	rel <- match.arg(relationship)
 	
@@ -98,15 +98,31 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "test1", "test2"), cr
 		results <- ssGP(as.matrix(gmaData$baseline), as.matrix(gmaData$mixture), crossRecords, 
 							 gmaData$baselineParams, gmaData$unsampledPopsParams, gmaData$genotypeKey,
 							 gmaData$genotypeErrorRates, minLLR, MIexcludeProb, filterLLR)
+		
+		# decode everything from ints back into strings
+		results[,2] <- popKey[match(results[,2], popKey[,2]),1]
+		results[,1] <- indivKey[match(results[,1], indivKey[,2]),1]
+		results[,3] <- indivKey[match(results[,3], indivKey[,2]),1]
+		results[,4] <- indivKey[match(results[,4], indivKey[,2]),1]
 
+	} else if(rel == "sP"){
+		# change things to numeric matrices when pass them to c++
+		gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
+		
+		results <- sP(as.matrix(gmaData$baseline), as.matrix(gmaData$mixture),
+							 gmaData$baselineParams, gmaData$unsampledPopsParams, gmaData$genotypeKey,
+							 gmaData$genotypeErrorRates, minLLR, MIexcludeProb, filterLLR)
+		
+		# decode everything from ints back into strings
+		results[,2] <- popKey[match(results[,2], popKey[,2]),1]
+		results[,1] <- indivKey[match(results[,1], indivKey[,2]),1]
+		results[,3] <- indivKey[match(results[,3], indivKey[,2]),1]
+
+	} else {
+		# should not get here b/c should throw error when argument is tried to match
+		stop("This rel is not set up")
 	}
 	
-	# decode everything from ints back into strings
-	results[,2] <- popKey[match(results[,2], popKey[,2]),1]
-	results[,1] <- indivKey[match(results[,1], indivKey[,2]),1]
-	results[,3] <- indivKey[match(results[,3], indivKey[,2]),1]
-	results[,4] <- indivKey[match(results[,4], indivKey[,2]),1]
-		
 		
 	return(results) #testing
 	
