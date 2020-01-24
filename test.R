@@ -835,9 +835,10 @@ falseGrandma(testErr, relationship = "ssGP",
 #                            lapply(testErr2$genotypeKey, as.matrix),
 #                            testErr2$genotypeErrorRates, c(1))
 
-otherPopErr <- otherPopERRORssGP(testErr$baselineParams, testErr$baselineParams, testErr$missingParams, 
+otherPopErr <- otherPopERRORssGP(testErr$baselineParams, testErr$baselineParams, testErr$missingParams,
 			 lapply(testErr$genotypeKey, as.matrix),
 			 testErr$genotypeErrorRates, 1, 1000, 300)
+
 
 summary(abs(sapply(testErr$baselineParams$OneEAGL11BCB, function(x) x[1]/sum(x)) - 
 					sapply(testErr$baselineParams$OneEAGL12BCB, function(x) x[1]/sum(x))))
@@ -882,3 +883,17 @@ head(knownGPs)
 errResSP <- falseGrandma(testErr2, relationship = "sP", 
 								 llrToTest = c(1,5,8), N = 10000, seed = NULL)
 # may benefit from importance sampling for false negative?
+
+errResSP_pairwise <- falseGrandma(testErr2, relationship = "sP", 
+								 llrToTest = c(1,5,8), N = 1000, seed = 7, pairwise = TRUE)
+
+head(errResSP_pairwise)
+
+fSP <- falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 1000, seed = 7)
+fSP_pair <- falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 1000, seed = 7,
+								 pairwise = TRUE)
+falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 50000, seed = 7)
+
+falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = FALSE)
+falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
+

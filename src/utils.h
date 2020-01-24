@@ -45,5 +45,9 @@ void createSP_OBSvector(const std::vector <std::vector <std::vector <double> > >
                           const std::vector <std::vector <double> >& lGenos_unsamp,
                           std::vector <std::vector <std::vector <double> > >& lGenos_Unrelated_OBS);
 bool noAllelesInCommonSP(const std::vector <int>& p1, const std::vector <int>& d);
+void create_CORR_OBSvector_sP(const std::vector< std::vector < std::vector <double> > >& genotypeErrorRatesC, 
+                           const std::vector <std::vector <double> >& lGenos_randomDescendant,
+                          const std::vector <std::vector <double> >& lGenos_base,
+                          std::vector <std::vector <std::vector <double> > >& CORR_lGenos_OBS);
 
 #endif

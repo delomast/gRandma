@@ -31,7 +31,7 @@ using namespace std;
 //' @noRd
 //' @export
 // [[Rcpp::export]]
-Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
+Rcpp::DataFrame otherPopERRORsP(Rcpp::List baselineParams,
                            Rcpp::List unsampledPopParams, Rcpp::List missingParams,
                            Rcpp::List genotypeKey,
                            Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest,
@@ -137,7 +137,7 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 					break;
 				}
 			}
-			if (skipBaseBool) continue;
+			if(skipBaseBool) continue;
 			
 			Rcpp::Rcout<<"Calculating error with baseline population "<<pop2 + 1<<"\n";
 			// calculate genotype log-likelihoods from random sampled genotype
@@ -163,75 +163,70 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 			}
 	
 			/*	
-			 *	calculate genotype likelihoods for grandparent(maternal) - grandparent(maternal) - grandchild relationship
+			 *	calculate genotype likelihoods for parent - offspring relationship
 				given true genotypes
 				different for each pop b/c it incorporates allele frequencies for both the baseline pop and the unsampled pop
 			 	Index 1 is locus
-			 	Index 2 is grandparent1 genotype
-				Index 3 is grandparent 2 genotype
-				Index 4 is grandchild genotype
+			 	Index 2 is parent genotype
+				Index 3 is offspring genotype
 				Value is likelihood (NOT log)
 			 */
-			vector <vector <vector <vector <double> > > > lGenos_ssGP;
-			createSSGPvector(genotypeKeyC, lGenos_base, unsampledPopParamsC, pop2, lGenos_ssGP);
-			
+			vector <vector <vector <double> > > lGenos_sP;
+			createSPvector(genotypeKeyC, lGenos_base, unsampledPopParamsC, pop2, lGenos_sP);
+	
 			/*	
-			 *	calculate genotype LOG-likelihoods for grandparent(maternal) - grandparent(maternal) - grandchild relationship
+			 *	calculate genotype LOG-likelihoods for parent - grandchild relationship
 			 *	and for all three being unrelated
-				given OBSERVED genotypes - but only if NO MISSING genotypes in the trio
+				given OBSERVED genotypes - but only if NO MISSING genotypes in the pair
 				different for each pop b/c it incorporates allele frequencies for both the baseline pop and the unsampled pop
 			 	Index 1 is locus
-			 	Index 2 is grandparent1 genotype
-				Index 3 is grandparent 2 genotype
-				Index 4 is grandchild genotype
+			 	Index 2 is parent1 genotype
+				Index 3 is offspring genotype
 				Value is LOG-likelihood
 			 */
-			vector <vector <vector <vector <double> > > > lGenos_ssGP_OBS;
-			vector <vector <vector <vector <double> > > > lGenos_Unrelated_OBS;
-			createOBSvector(lGenos_ssGP, genotypeErrorRatesC, lGenos_ssGP_OBS, 
+			vector <vector <vector <double> > > lGenos_sP_OBS;
+			vector <vector <vector <double> > > lGenos_Unrelated_OBS;
+			createSP_OBSvector(lGenos_sP, genotypeErrorRatesC, lGenos_sP_OBS, 
 	                  lGenos_base, lGenos_unsamp, lGenos_Unrelated_OBS);
 			
 			/*
-			 * rearranging lGenos_ssGP_OBS to be easier to use for sampling trio genotypes
+			 * rearranging lGenos_ssGP_OBS to be easier to use for sampling pair genotypes
 			 * So for each locus, combo has the index of each trio Genotype combination
 			 * probability has the probability of each combo
-			 * trioGenosLookup has a vector giving the three genotypes in each combo (gpa, gma, d)
+			 * trioGenosLookup has a vector giving the two genotypes in each combo (p1, d)
 			 */
 			vector <vector <int> > combo; // index of the genotype combos
 			vector <vector <double> > prob; // the probabilities of each genotype combo
-			vector <vector <vector <int> > > trioGenosLookup; // the genotype combos
+			vector <vector <vector <int> > > pairGenosLookup; // the genotype combos
 			for(int i = 0; i < nLoci; i++){
 				vector <int> tempCombo;
 				vector <double> tempProb;
 				vector <vector <int> > tempGenos;
-				int trioIndex = 0;
-				for(int gpa = 0, maxGP = lGenos_ssGP_OBS[i].size(); gpa < maxGP; gpa++){
-					for(int gma = 0; gma < maxGP; gma++){
-						for(int d = 0; d < maxGP; d++){
-							tempProb.push_back(exp(lGenos_ssGP_OBS[i][gpa][gma][d]));
-							tempCombo.push_back(trioIndex);
-							vector <int> tempVec (3,-9);
-							tempVec[0] = gpa;
-							tempVec[1] = gma;
-							tempVec[2] = d;
-							tempGenos.push_back(tempVec);
-							trioIndex++;
-						}
+				int pairIndex = 0;
+				for(int p1 = 0, max = lGenos_sP_OBS[i].size(); p1 < max; p1++){
+					for(int d = 0; d < max; d++){
+						tempProb.push_back(exp(lGenos_sP_OBS[i][p1][d]));
+						tempCombo.push_back(pairIndex);
+						vector <int> tempVec (2,-9);
+						tempVec[0] = p1;
+						tempVec[1] = d;
+						tempGenos.push_back(tempVec);
+						pairIndex++;
 					}
 				}
 				combo.push_back(tempCombo);
 				prob.push_back(tempProb);
-				trioGenosLookup.push_back(tempGenos);
+				pairGenosLookup.push_back(tempGenos);
 			}
 			
 			/*
 			 * making reference "table" of correction ratio lGenos based on observed genotypes
 			 * with NO missing data
-			 * Indices are: locus, gp1 observed geno, gp2 observed geno, d observed geno
+			 * Indices are: locus, p1 observed geno, d observed geno
 			 * value is LOG-likelihood
 			 */
-			vector <vector <vector <vector <double> > > > CORR_lGenos_OBS;
-			create_CORR_OBSvector(genotypeErrorRatesC, lGenos_randomDescendant, lGenos_base, CORR_lGenos_OBS);
+			vector <vector <vector <double> > > CORR_lGenos_OBS;
+			create_CORR_OBSvector_sP(genotypeErrorRatesC, lGenos_randomDescendant, lGenos_base, CORR_lGenos_OBS);
 			
 			// inititate results storage for this pop - one entry for each llr
 			vector <double> falsePos (llrToTestC.size(), 0);
@@ -240,51 +235,42 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 			for(int n = 0; n < N; n++){
 				if(n % 100 == 0) Rcpp::checkUserInterrupt();
 				
-				// simulate trio
-				vector <int> gmaGenos (nLoci, 0);
-				vector <int> gpaGenos (nLoci, 0);
+				// simulate pair
+				vector <int> p1Genos (nLoci, 0);
 				vector <int> dGenos (nLoci, 0);
-				vector <int> sampTrio (3, -1);
+				vector <int> sampPair (2, -1);
 				for(int i = 0; i < nLoci; i++){ // for each locus
 					// sample observed genotypes
-					sampTrio = trioGenosLookup[i][sampleC(combo[i], prob[i], rg)]; // sample a trio of observed genotypes
+					sampPair = pairGenosLookup[i][sampleC(combo[i], prob[i], rg)]; // sample a trio of observed genotypes
 	
 					// add missing genotypes as appropriate
-					for(int j = 0; j < 3; j++) if(randMissing[i](rg)) sampTrio[j] = -9;
-					gpaGenos[i] = sampTrio[0];
-					gmaGenos[i] = sampTrio[1];
-					dGenos[i] = sampTrio[2];
+					for(int j = 0; j < 2; j++) if(randMissing[i](rg)) sampPair[j] = -9;
+					p1Genos[i] = sampPair[0];
+					dGenos[i] = sampPair[1];
 				}
 				
 				// calc LLR
 				double uLLH = 0.0;
-				double gpLLH = 0.0;
-				double CORR_uLLH = 0.0; // for correction ratio for importance sampling - this is prob of sampling "grandparents" from 
-												// the current "baseline" pop and "descendant" of the current descendant pop
-				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ //for each locus
+				double pLLH = 0.0;
+				double CORR_uLLH = 0.0; // for correction ratio prob of sampling unrelated "parent" from one pop 
+												// and "descendent" from the other pop
+				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ // for each locus
 					// observed genotypes
-					int obs_gp1 = gpaGenos[j];
-					int obs_gp2 = gmaGenos[j];
+					int obs_p1 = p1Genos[j];
 					int obs_d = dGenos[j];
-	
+					
 					// if missing genotypes
-					if(obs_gp1 == -9 || obs_gp2 == -9 || obs_d == -9){
+					if(obs_p1 == -9 || obs_d == -9){
 						double u_likelihood = 0.0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
-						double gp_likelihood = 0.0;
+						double p_likelihood = 0.0;
 						double CORR_u_likelihood = 0.0;
-						double pOA_gp1, pOA_gp2, pOA_d; // prob of observed given actual
-						for(int gp1 = 0, max3 = genotypeKeyC[j].size(); gp1 < max3; gp1++){ // for each possible gp1 genotype
-							for(int gp2 = 0; gp2 < max3; gp2++){ // for each possible gp2 genotype
+						double pOA_p1, pOA_d; // prob of observed given actual
+						for(int p1 = 0, max3 = genotypeKeyC[j].size(); p1 < max3; p1++){ // for each possible p1 genotype
 								for(int d = 0; d < max3; d++){ // for each possible d genotype
-									if(obs_gp1 == -9){
-										pOA_gp1 = 1.0;
+									if(obs_p1 == -9){
+										pOA_p1 = 1.0;
 									} else {
-										pOA_gp1 = genotypeErrorRatesC[j][gp1][obs_gp1];
-									}
-									if(obs_gp2 == -9){
-										pOA_gp2 = 1.0;
-									} else {
-										pOA_gp2 = genotypeErrorRatesC[j][gp2][obs_gp2];
+										pOA_p1 = genotypeErrorRatesC[j][p1][obs_p1];
 									}
 									if(obs_d == -9){
 										pOA_d = 1.0;
@@ -292,32 +278,32 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 										pOA_d = genotypeErrorRatesC[j][d][obs_d];
 									}
 									// unrelated
-									// P(gp1|baseline pop)P(gp2|baseline pop)P(d|unsampled pop)P(gp1|obs_gp1)P(gp2|obs_gp2)P(d|obs_d)
-									u_likelihood += exp(lGenos_base[j][gp1] + lGenos_base[j][gp2] + lGenos_unsamp[j][d]) * 
-										 pOA_gp1 * pOA_gp2 * pOA_d;
+									// P(p1|baseline pop)P(d|unsampled pop)P(p1|obs_p1)P(d|obs_d)
+									u_likelihood += exp(lGenos_base[j][p1] + lGenos_unsamp[j][d]) * 
+										 pOA_p1 * pOA_d;
 									// grandparent pair
-									gp_likelihood += lGenos_ssGP[j][gp1][gp2][d] *
-										pOA_gp1 * pOA_gp2 * pOA_d;
+									p_likelihood += lGenos_sP[j][p1][d] *
+										pOA_p1 * pOA_d;
 									// correction for importance sampling
-									CORR_u_likelihood += exp(lGenos_base[j][gp1] + lGenos_base[j][gp2] + lGenos_randomDescendant[j][d]) * 
-										 pOA_gp1 * pOA_gp2 * pOA_d;
+									CORR_u_likelihood += exp(lGenos_base[j][p1] + lGenos_randomDescendant[j][d]) * 
+										 pOA_p1 * pOA_d;
 								}
-							}
+							
 						}
 						uLLH += log(u_likelihood);
-						gpLLH += log(gp_likelihood);
+						pLLH += log(p_likelihood);
 						CORR_uLLH += log(CORR_u_likelihood);
 					} else { // no missing genotypes
-						uLLH += lGenos_Unrelated_OBS[j][obs_gp1][obs_gp2][obs_d];
-						gpLLH += lGenos_ssGP_OBS[j][obs_gp1][obs_gp2][obs_d];
-						CORR_uLLH += CORR_lGenos_OBS[j][obs_gp1][obs_gp2][obs_d];
+						uLLH += lGenos_Unrelated_OBS[j][obs_p1][obs_d];
+						pLLH += lGenos_sP_OBS[j][obs_p1][obs_d];
+						CORR_uLLH += CORR_lGenos_OBS[j][obs_p1][obs_d];
 					}
 				}
 				// determine number under and over threshold
 				for(int i = 0, max2 = llrToTestC.size(); i < max2; i++){
-					if((gpLLH - uLLH) >= llrToTestC[i]){
-						falsePos[i] += exp(CORR_uLLH - gpLLH); // correction for sampling distribution
-						SSfalsePos[i] += pow(exp(CORR_uLLH - gpLLH), 2);
+					if((pLLH - uLLH) >= llrToTestC[i]){
+						falsePos[i] += exp(CORR_uLLH - pLLH); // correction for sampling distribution
+						SSfalsePos[i] += pow(exp(CORR_uLLH - pLLH), 2);
 					}
 				}
 			} // end for N

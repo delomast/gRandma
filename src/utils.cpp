@@ -420,3 +420,40 @@ bool noAllelesInCommonSP(const vector <int>& p1, const vector <int>& d){
 	}
 }
 
+// calculate genotype LOG - likelihoods for two unrelated individuals:
+//   one from one pop and one a descendant of another pop
+//	given OBSERVED genotypes - but only if NO MISSING genotypes in the trio
+// This is used in "otherPopERRORsP"
+void create_CORR_OBSvector_sP(const vector< vector < vector <double> > >& genotypeErrorRatesC, 
+                           const vector <vector <double> >& lGenos_randomDescendant,
+                          const vector <vector <double> >& lGenos_base,
+                          vector <vector <vector <double> > >& CORR_lGenos_OBS // output to this
+                          ){
+	// initialize with 0's - note that 0's will cause problems if not replaced b/c these are log-likelihoods...
+	for(int i = 0, max = genotypeErrorRatesC.size(); i < max; i++){ //for each locus
+		vector <vector <double> > tempLocus;
+		for(int p1 = 0, max2 = genotypeErrorRatesC[i].size(); p1 < max2; p1++){ //for each gp1 genotype
+			vector <double> tempP2 (max2,0.0);
+			tempLocus.push_back(tempP2);
+		}
+		CORR_lGenos_OBS.push_back(tempLocus);
+	}
+	
+	// calculate for all loci and observed genotype combinations
+	for(int i = 0, max = genotypeErrorRatesC.size(); i < max; i++){
+		for(int obs_p1 = 0, max3 = genotypeErrorRatesC[i].size(); obs_p1 < max3; obs_p1++){
+			for(int obs_d = 0; obs_d < max3; obs_d++){
+				double u_likelihood = 0.0;
+				// marginalize over all possible true genotype combinations
+				for(int p1 = 0; p1 < max3; p1++){
+					for(int d = 0; d < max3; d++){
+						u_likelihood += exp(lGenos_base[i][p1] + lGenos_randomDescendant[i][d]) * 
+							genotypeErrorRatesC[i][p1][obs_p1] * 
+							genotypeErrorRatesC[i][d][obs_d];
+					}
+				}
+				CORR_lGenos_OBS[i][obs_p1][obs_d] = log(u_likelihood);
+			}
+		}
+	}
+}

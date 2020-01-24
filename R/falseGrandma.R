@@ -93,7 +93,9 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 		}
 	} else if(rel == "sP"){
 		if(pairwise){
-			stop("This option not set up at this time")
+			errResults <- otherPopERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+				gmaData$missingParams, gmaData$genotypeKey,
+				 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
 		} else {
 			errResults <- ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 					gmaData$missingParams, gmaData$genotypeKey,
