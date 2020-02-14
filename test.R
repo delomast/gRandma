@@ -870,7 +870,7 @@ gmaInput4 <- gmaInput3
 names(gmaInput4$baselineParams)[2] <- "UnsampledPop_OmyDWOR19S"
 
 falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 1000, pairwise = FALSE)
-falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 10000, pairwise = TRUE)
+falseGrandma(gmaInput3, "ssGP", c(1,5,8,10), 1000, pairwise = TRUE)
 
 
 spResults <- inferGrandma(test, relationship = "sP", filterLLR = FALSE)
@@ -896,4 +896,7 @@ falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 5000
 
 falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = FALSE)
 falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
+
+
+
 

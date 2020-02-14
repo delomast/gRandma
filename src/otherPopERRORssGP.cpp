@@ -111,16 +111,16 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 				k2[genotypeKeyC[i][j][1]]++;
 				if(genotypeKeyC[i][j][0] == genotypeKeyC[i][j][1]){ // alleles are the same
 					// prob sample allele from both
-					tempLH.push_back(logDirichMultPMF(k1, baselineParamsC[pop][i]) + 
-						logDirichMultPMF(k2, unsampledPopParamsC[pop][i])
+					tempLH.push_back(logMultPMF(k1, baselineParamsC[pop][i]) + 
+						logMultPMF(k2, unsampledPopParamsC[pop][i])
 					);
 				} else {
 					// prob sample allele1 from one, allele2 from other + prob of vice versa
 					tempLH.push_back(log(
-						exp(logDirichMultPMF(k1, baselineParamsC[pop][i]) + 
-						logDirichMultPMF(k2, unsampledPopParamsC[pop][i])) + 
-						exp(logDirichMultPMF(k2, baselineParamsC[pop][i]) + 
-						logDirichMultPMF(k1, unsampledPopParamsC[pop][i]))
+						exp(logMultPMF(k1, baselineParamsC[pop][i]) + 
+						logMultPMF(k2, unsampledPopParamsC[pop][i])) + 
+						exp(logMultPMF(k2, baselineParamsC[pop][i]) + 
+						logMultPMF(k1, unsampledPopParamsC[pop][i]))
 					));
 				}
 			}
@@ -155,8 +155,8 @@ Rcpp::DataFrame otherPopERRORssGP(Rcpp::List baselineParams,
 					vector <double> k (baselineParamsC[pop2][i].size(), 0);
 					k[genotypeKeyC[i][j][0]]++;
 					k[genotypeKeyC[i][j][1]]++;
-					tempBase.push_back(logDirichMultPMF(k, baselineParamsC[pop2][i]));
-					tempUnsamp.push_back(logDirichMultPMF(k, unsampledPopParamsC[pop2][i]));
+					tempBase.push_back(logMultPMF(k, baselineParamsC[pop2][i]));
+					tempUnsamp.push_back(logMultPMF(k, unsampledPopParamsC[pop2][i]));
 				}
 				lGenos_base.push_back(tempBase);
 				lGenos_unsamp.push_back(tempUnsamp);

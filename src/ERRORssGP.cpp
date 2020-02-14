@@ -103,8 +103,8 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 				vector <double> k (baselineParamsC[pop][i].size(), 0);
 				k[genotypeKeyC[i][j][0]]++;
 				k[genotypeKeyC[i][j][1]]++;
-				tempBase.push_back(logDirichMultPMF(k, baselineParamsC[pop][i]));
-				tempUnsamp.push_back(logDirichMultPMF(k, unsampledPopParamsC[pop][i]));
+				tempBase.push_back(logMultPMF(k, baselineParamsC[pop][i]));
+				tempUnsamp.push_back(logMultPMF(k, unsampledPopParamsC[pop][i]));
 			}
 			lGenos_base.push_back(tempBase);
 			lGenos_unsamp.push_back(tempUnsamp);

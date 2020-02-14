@@ -172,14 +172,14 @@ void createSSGPvector(const vector <vector <vector <int> > >& genotypeKeyC,
 					k[genotypeKeyC[i][d][0]] = 1;
 					if(genotypeKeyC[i][d][0] == genotypeKeyC[i][d][1]){
 						// P(gp1) * P(gp2) * prob allele from unsampled pop * prob allele from one of GPs
-						tempLH *= exp(logDirichMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit0;
+						tempLH *= exp(logMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit0;
 					} else {
 						vector <double> k2 (unsampledPopParamsC[pop][i].size(), 0);
 						k2[genotypeKeyC[i][d][1]] = 1;
 						// P(gp1) * P(gp2) * (prob allele1 from unsampled pop * prob allele2 from GPs +
 						// prob allele2 from unsampled pop * prob allele1 from GPs)
-						tempLH *= (exp(logDirichMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit1) +
-							(exp(logDirichMultPMF(k2, unsampledPopParamsC[pop][i])) * pInherit0);
+						tempLH *= (exp(logMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit1) +
+							(exp(logMultPMF(k2, unsampledPopParamsC[pop][i])) * pInherit0);
 					}
 					
 					lGenos_ssGP[i][gp1][gp2][d] = tempLH;
@@ -344,14 +344,14 @@ void createSPvector(const vector <vector <vector <int> > >& genotypeKeyC,
 				k[genotypeKeyC[i][d][0]] = 1;
 				if(genotypeKeyC[i][d][0] == genotypeKeyC[i][d][1]){
 					// P(p1) * prob allele from unsampled pop * prob allele from p1
-					tempLH *= exp(logDirichMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit0;
+					tempLH *= exp(logMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit0;
 				} else {
 					vector <double> k2 (unsampledPopParamsC[pop][i].size(), 0);
 					k2[genotypeKeyC[i][d][1]] = 1;
 					// P(p1) * (prob allele1 from unsampled pop * prob allele2 from p1 +
 					// prob allele2 from unsampled pop * prob allele1 from p1)
-					tempLH *= (exp(logDirichMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit1) +
-						(exp(logDirichMultPMF(k2, unsampledPopParamsC[pop][i])) * pInherit0);
+					tempLH *= (exp(logMultPMF(k, unsampledPopParamsC[pop][i])) * pInherit1) +
+						(exp(logMultPMF(k2, unsampledPopParamsC[pop][i])) * pInherit0);
 				}
 				
 				lGenos_sP[i][p1][d] = tempLH;

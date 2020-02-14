@@ -10,7 +10,7 @@
 
 using namespace std;
 
-
+/*
 // pmf of Dirichlet-multinomial distribution
 // @param k a vector of the number of observations in each category
 // @param a a vector of the parameters (alpha) describing the Dirichlet
@@ -32,7 +32,30 @@ double logDirichMultPMF(const vector <double>& k, const vector <double>& a){
 	return dens;
 }
 
+*/
 
+// pmf of multinomial distribution
+// @param k a vector of the number of observations in each category
+// @param a a vector of the parameters (alpha) describing relative probabilities of each group
+double logMultPMF(const vector <double>& k, const vector <double>& a){
+	if (k.size() != a.size()) Rcpp::stop("internal error: k not equal to a in logMultPMF");
+
+	int numA = a.size();
+	double n = 0;
+	for(int i = 0; i < numA; i++) n += k[i];
+	double l_sumA = 0;	
+	for(int i = 0; i < numA; i++) l_sumA += a[i];
+	l_sumA = log(l_sumA);
+
+	//start density calculation
+	double dens = lgamma(n + 1);
+	for(int i = 0; i < numA; i++){
+		dens += (k[i] * (log(a[i]) - l_sumA)) - lgamma(k[i] + 1);
+	}
+	return dens;
+}
+ 
+ 
 // caluculate likelihood of parent 1, parent 2, and offspring genotypes given Mendalian inheritance
 // @param p1 parent 1 genotypes (two ints - diploid)
 // @param p2 parent 2 genotypes (two ints - diploid)
