@@ -10,7 +10,7 @@
 #include <vector>
 #include "misc_math.h"
 
-void pairwiseK(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC, 
+void pairwiseK_calc2(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC, 
 	                      const  std::vector <std::vector <double> >& lGenos_base, 
 	                      const std::vector <std::vector <std::vector <double> > >& baselineParamsC,
 	                      const std::vector <std::vector <std::vector <double> > >& unsampledPopParamsC,

@@ -900,8 +900,12 @@ falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
 
 
 falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
+falseGrandma(test, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
 
 exp(-2.07637)^2
 exp(-.87421)^2
 gmaInput3$genotypeKeys[1]
+
+str(gmaInput2)
+
 

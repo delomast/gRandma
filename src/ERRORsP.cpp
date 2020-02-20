@@ -131,19 +131,23 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 		k_prob[0] = 0.5;
 		k_prob[1] = 0.5;
 		// k_prob[2] = 0;
-		pairwiseK(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
+		pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
 	                      k_prob, lGenos_aunt);
 		k_prob[0] = 0.75;
 		k_prob[1] = 0.25;
 		// k_prob[2] = 0;
-		pairwiseK(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
+		pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
 	                      k_prob, lGenos_halfaunt);
 		k_prob[0] = 0.875;
 		k_prob[1] = 0.125;
-		// k_prob[0] = 0;
-		// k_prob[1] = 1;
 		// k_prob[2] = 0;
-		pairwiseK(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
+		
+		// testing
+		// k_prob[0] = 1;
+		// k_prob[1] = 0;
+		// end testing
+		
+		pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
 	                      k_prob, lGenos_parcous);
 
 		/*	
@@ -174,12 +178,15 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 		vector <vector <vector <double> > > lGenos_sP;
 		createSPvector(genotypeKeyC, lGenos_base, unsampledPopParamsC, pop, lGenos_sP);
 
+		// testing
 		// for(int t = 0; t < genotypeKeyC[0].size(); t++){
 		// 	for(int t2 = 0; t2 < genotypeKeyC[0].size(); t2++){
-		// 		Rcpp::Rcout << lGenos_sP[0][t][t2] << " " << lGenos_parcous[0][t][t2] << "\n";
+		// 		// Rcpp::Rcout << lGenos_sP[0][t][t2] << " " << lGenos_parcous[0][t][t2] << "\n";
+		// 		Rcpp::Rcout << exp(lGenos_base[0][t] + lGenos_base[0][t2]) << " " << lGenos_parcous[0][t][t2] << "\n";
 		// 	}
 		// }
 		// Rcpp::stop("here");
+		// end testing
 		
 		/*	
 		 *	calculate genotype LOG-likelihoods for parent - offspring relationship
