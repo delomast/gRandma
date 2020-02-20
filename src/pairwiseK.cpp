@@ -14,7 +14,7 @@ using namespace std;
 //
 //
 // NOTE to self: this function is probably not correct. Need to go through it carefully.
-//
+//  may have fixed it. Compare to brute force method for PO with snps and 3+ alleles
 //
 // given TRUE genotypes
 void pairwiseK(const vector <vector <vector <int> > >& genotypeKeyC, 
@@ -87,6 +87,9 @@ void pairwiseK(const vector <vector <vector <int> > >& genotypeKeyC,
 						} else {
 							t = exp(logMultPMF(k, unsampledPopParamsC[pop][i]));
 						}
+						// if parent is het, need to multiply by P(that allele is ibd) = 0.5
+						//   b/c only one of two alleles is shared
+						if(genotypeKeyC[i][p1][0] != genotypeKeyC[i][p1][1]) t *= 0.5;
 						tempLH *= (k_prob[1] * t) + (k_prob[0] * (exp(logMultPMF(k, unsampledPopParamsC[pop][i]) + 
 								logMultPMF(k2, baselineParamsC[pop][i])) +
 							exp(logMultPMF(k2, unsampledPopParamsC[pop][i]) + 
