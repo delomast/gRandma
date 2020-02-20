@@ -5,6 +5,7 @@
 #include "misc_math.h"
 #include "utils.h"
 #include "mend_incompat.h"
+#include "pairwiseK.h"
 
 using namespace std;
 
@@ -83,6 +84,12 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 	vector <double> falseNegAll;
 	vector <double> SDfalsePosAll;
 	vector <double> SDfalseNegAll;
+	vector <double> falsePosAll_aunt;
+	vector <double> SDfalsePosAll_aunt;
+	vector <double> falsePosAll_halfaunt;
+	vector <double> SDfalsePosAll_halfaunt;
+	vector <double> falsePosAll_parcous;
+	vector <double> SDfalsePosAll_parcous;
 	
 	// for each baseline population
 	for(int pop = 0, max = baselineParamsC.size(); pop < max; pop++){
@@ -110,6 +117,51 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 			lGenos_unsamp.push_back(tempUnsamp);
 		}
 
+		/*
+		 * calculate genotype likelihoods for aunt/uncle - niece/nephew
+		 * Index 1 is locus, 2 is aunt/uncle geno, 3 is niece/nephew geno
+		 * value is likelihood (NOT log)
+		 * same for half aunt - niece
+		 * same for cousin of true parent - descendant
+		 */
+		vector <vector <vector <double> > > lGenos_aunt;
+		vector <vector <vector <double> > > lGenos_halfaunt;
+		vector <vector <vector <double> > > lGenos_parcous;
+		vector <double> k_prob(3,0);
+		k_prob[0] = 0.5;
+		k_prob[1] = 0.5;
+		// k_prob[2] = 0;
+		pairwiseK(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
+	                      k_prob, lGenos_aunt);
+		k_prob[0] = 0.75;
+		k_prob[1] = 0.25;
+		// k_prob[2] = 0;
+		pairwiseK(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
+	                      k_prob, lGenos_halfaunt);
+		k_prob[0] = 0.875;
+		k_prob[1] = 0.125;
+		// k_prob[0] = 0;
+		// k_prob[1] = 1;
+		// k_prob[2] = 0;
+		pairwiseK(genotypeKeyC, lGenos_base, baselineParamsC, unsampledPopParamsC, pop,
+	                      k_prob, lGenos_parcous);
+
+		/*	
+		 *	calculate genotype LOG-likelihoods for aunt/uncle - niece/nephew relationship
+		 *	and for all three being unrelated
+			given OBSERVED genotypes - but only if NO MISSING genotypes in the pair
+		 	Index 1 is locus, 2 is aunt/uncle geno, 3 is niece/nephew geno
+			Value is LOG-likelihood
+		 * same for half aunt - niece
+		 * same for cousin of true parent - descendant
+		 */
+		vector <vector <vector <double> > > lGenos_aunt_OBS;
+		vector <vector <vector <double> > > lGenos_halfaunt_OBS;
+		vector <vector <vector <double> > > lGenos_parcous_OBS;
+		create_pairswise_OBSvector(lGenos_aunt, genotypeErrorRatesC, lGenos_aunt_OBS);
+		create_pairswise_OBSvector(lGenos_halfaunt, genotypeErrorRatesC, lGenos_halfaunt_OBS);
+		create_pairswise_OBSvector(lGenos_parcous, genotypeErrorRatesC, lGenos_parcous_OBS);
+		
 		/*	
 		 *	calculate genotype likelihoods for parent - offspring relationship
 			given true genotypes
@@ -122,8 +174,15 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 		vector <vector <vector <double> > > lGenos_sP;
 		createSPvector(genotypeKeyC, lGenos_base, unsampledPopParamsC, pop, lGenos_sP);
 
+		// for(int t = 0; t < genotypeKeyC[0].size(); t++){
+		// 	for(int t2 = 0; t2 < genotypeKeyC[0].size(); t2++){
+		// 		Rcpp::Rcout << lGenos_sP[0][t][t2] << " " << lGenos_parcous[0][t][t2] << "\n";
+		// 	}
+		// }
+		// Rcpp::stop("here");
+		
 		/*	
-		 *	calculate genotype LOG-likelihoods for parent - grandchild relationship
+		 *	calculate genotype LOG-likelihoods for parent - offspring relationship
 		 *	and for all three being unrelated
 			given OBSERVED genotypes - but only if NO MISSING genotypes in the pair
 			different for each pop b/c it incorporates allele frequencies for both the baseline pop and the unsampled pop
@@ -171,6 +230,13 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 		vector <double> falsePos (llrToTestC.size(), 0);
 		vector <double> falseNeg (llrToTestC.size(), 0);
 		vector <double> SSfalsePos (llrToTestC.size(), 0); // sum of squares for variance calcs
+		vector <double> falsePos_aunt (llrToTestC.size(), 0);
+		vector <double> SSfalsePos_aunt (llrToTestC.size(), 0);
+		vector <double> falsePos_halfaunt (llrToTestC.size(), 0);
+		vector <double> SSfalsePos_halfaunt (llrToTestC.size(), 0);
+		vector <double> falsePos_parcous (llrToTestC.size(), 0);
+		vector <double> SSfalsePos_parcous (llrToTestC.size(), 0);
+
 		// don't need sum squares for falseNeg right now b/c all are either 0 or 1 (no importance sampling)
 		
 		for(int n = 0; n < N; n++){
@@ -191,8 +257,11 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 			}
 			
 			// calc LLR
-			double uLLH = 0.0;
-			double pLLH = 0.0;
+			double uLLH = 0;
+			double pLLH = 0;
+			double aunt_LLH = 0; // correction for sampling distribution
+			double halfaunt_LLH = 0;
+			double parcous_LLH = 0;
 			for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ //for each locus
 				// observed genotypes
 				int obs_p1 = p1Genos[j];
@@ -200,18 +269,21 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 				
 				// if missing genotypes
 				if(obs_p1 == -9 || obs_d == -9){
-					double u_likelihood = 0.0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
-					double p_likelihood = 0.0;
+					double u_likelihood = 0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
+					double p_likelihood = 0;
+					double aunt_likelihood = 0;
+					double halfaunt_likelihood = 0;
+					double parcous_likelihood = 0;
 					double pOA_p1, pOA_d; // prob of observed given actual
 					for(int p1 = 0, max3 = genotypeKeyC[j].size(); p1 < max3; p1++){ // for each possible p1 genotype
 							for(int d = 0; d < max3; d++){ // for each possible d genotype
 								if(obs_p1 == -9){
-									pOA_p1 = 1.0;
+									pOA_p1 = 1;
 								} else {
 									pOA_p1 = genotypeErrorRatesC[j][p1][obs_p1];
 								}
 								if(obs_d == -9){
-									pOA_d = 1.0;
+									pOA_d = 1;
 								} else {
 									pOA_d = genotypeErrorRatesC[j][d][obs_d];
 								}
@@ -222,14 +294,29 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 								// grandparent pair
 								p_likelihood += lGenos_sP[j][p1][d] *
 									pOA_p1 * pOA_d;
+								// aunt
+								aunt_likelihood += lGenos_aunt[j][p1][d] *
+									pOA_p1 * pOA_d;
+								// half aunt
+								halfaunt_likelihood += lGenos_halfaunt[j][p1][d] *
+									pOA_p1 * pOA_d;
+								// cousing of true parent
+								parcous_likelihood += lGenos_parcous[j][p1][d] *
+									pOA_p1 * pOA_d;
 							}
 						
 					}
 					uLLH += log(u_likelihood);
 					pLLH += log(p_likelihood);
+					aunt_LLH += log(aunt_likelihood);
+					halfaunt_LLH += log(halfaunt_likelihood);
+					parcous_LLH += log(parcous_likelihood);
 				} else { // no missing genotypes
 					uLLH += lGenos_Unrelated_OBS[j][obs_p1][obs_d];
 					pLLH += lGenos_sP_OBS[j][obs_p1][obs_d];
+					aunt_LLH += lGenos_aunt_OBS[j][obs_p1][obs_d];
+					halfaunt_LLH += lGenos_halfaunt_OBS[j][obs_p1][obs_d];
+					parcous_LLH += lGenos_parcous_OBS[j][obs_p1][obs_d];
 				}
 			}
 			double llr = pLLH - uLLH;
@@ -240,12 +327,21 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 				} else {
 					falsePos[i] += exp(-llr); // correction for sampling distribution
 					SSfalsePos[i] += pow(exp(-llr), 2);
+					falsePos_aunt[i] += exp(aunt_LLH - pLLH);
+					SSfalsePos_aunt[i] += pow(exp(aunt_LLH - pLLH), 2);
+					falsePos_halfaunt[i] += exp(halfaunt_LLH - pLLH);
+					SSfalsePos_halfaunt[i] += pow(exp(halfaunt_LLH - pLLH), 2);
+					falsePos_parcous[i] += exp(parcous_LLH - pLLH);
+					SSfalsePos_parcous[i] += pow(exp(parcous_LLH - pLLH), 2);
 				}
 			}
 		} // end for N
 		for(int i = 0, max = llrToTestC.size(); i < max; i++){
 			double fpMean = falsePos[i] / N; // need for variance calc
 			double fnMean = falseNeg[i] / N;
+			double fpMean_aunt = falsePos_aunt[i] / N;
+			double fpMean_halfaunt = falsePos_halfaunt[i] / N;
+			double fpMean_parcous = falsePos_parcous[i] / N;
 
 			popResults.push_back(pop);
 			llrRecord.push_back(llrToTestC[i]);
@@ -253,6 +349,12 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
 			falseNegAll.push_back(fnMean);
 			SDfalsePosAll.push_back(sqrt(varianceEstim(N, SSfalsePos[i], fpMean)));
 			SDfalseNegAll.push_back(sqrt(varianceEstim(N, falseNeg[i], fnMean))); // since all are 1 SS is just sum
+			falsePosAll_aunt.push_back(fpMean_aunt);
+			SDfalsePosAll_aunt.push_back(sqrt(varianceEstim(N, SSfalsePos_aunt[i], fpMean_aunt)));
+			falsePosAll_halfaunt.push_back(fpMean_halfaunt);
+			SDfalsePosAll_halfaunt.push_back(sqrt(varianceEstim(N, SSfalsePos_halfaunt[i], fpMean_halfaunt)));
+			falsePosAll_parcous.push_back(fpMean_parcous);
+			SDfalsePosAll_parcous.push_back(sqrt(varianceEstim(N, SSfalsePos_parcous[i], fpMean_parcous)));
 		}
 	
 	} // end for pop
@@ -263,7 +365,13 @@ Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams,
                                                    Rcpp::Named("falsePos") = falsePosAll,
                                                    Rcpp::Named("falsePosSD") = SDfalsePosAll,
                                                    Rcpp::Named("falseNeg") = falseNegAll,
-                                                   Rcpp::Named("falseNegSD") = SDfalseNegAll
+                                                   Rcpp::Named("falseNegSD") = SDfalseNegAll,
+                                                   Rcpp::Named("falsePosAunt") = falsePosAll_aunt,
+                                                   Rcpp::Named("falsePosAuntSD") = SDfalsePosAll_aunt,
+                                                   Rcpp::Named("falsePosHalfAunt") = falsePosAll_halfaunt,
+                                                   Rcpp::Named("falsePosHalfAuntSD") = SDfalsePosAll_halfaunt,
+                                                   Rcpp::Named("falsePosParCous") = falsePosAll_parcous,
+                                                   Rcpp::Named("falsePosParCousSD") = SDfalsePosAll_parcous
 																	);
 	
 	return results;

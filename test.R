@@ -894,9 +894,14 @@ fSP_pair <- falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,1
 								 pairwise = TRUE)
 falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 50000, seed = 7)
 
-falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = FALSE)
+
+falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
 falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
 
 
+falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
 
+exp(-2.07637)^2
+exp(-.87421)^2
+gmaInput3$genotypeKeys[1]
 
