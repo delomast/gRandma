@@ -18,7 +18,7 @@
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
-								 llrToTest, N = 10000, seed = NULL, pairwise = FALSE){
+								 llrToTest, N = 10000, seed = NULL, pairwise = FALSE, testBool = FALSE, itersPerMI = NULL){
 	rel <- match.arg(relationship)
 	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
 												 	as.numeric(format(Sys.time(), "%j")) * 
@@ -93,9 +93,21 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 		}
 	} else if(rel == "sP"){
 		if(pairwise){
-			errResults <- otherPopERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-				gmaData$missingParams, gmaData$genotypeKey,
-				 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
+			if(testBool){
+				errResults <- strat_otherPopERRORsP(gmaData$baselineParams,
+	                           gmaData$unsampledPopsParams, gmaData$missingParams,
+	                           gmaData$genotypeKey,
+	                           gmaData$genotypeErrorRates, llrToTest,
+	                           itersPerMI,
+	                           round(seed), skipBaseline)
+				return(errResults)
+			} else {
+				errResults <- otherPopERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+					gmaData$missingParams, gmaData$genotypeKey,
+					gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
+			}
+			
+
 		} else {
 			errResults <- ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 					gmaData$missingParams, gmaData$genotypeKey,

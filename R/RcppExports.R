@@ -124,3 +124,26 @@ ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopPa
     .Call(`_gRandma_ssGP`, baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates, saveLLR, MIexcludeProb, filterLLR)
 }
 
+#' estimating false positive error rates for single-sided grandparent pair vs unrelated
+#' with individuls from one population being assigned to a different population
+#' Stratified sampling Monte Carlo used for estimating false positive 
+#' 
+#' 
+#' This version uses trios from the current "baseline" pop as the importance sampling distribution
+#' 
+#' @param baselineParams Dirichlet parameters for allele frequencies
+#' @param unsampledPopParams Dirichlet parameters for allele frequencies
+#' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
+#' @param llrToTest Vector of llr's to test as threshold values
+#' @param N number of samples to take
+#' @param skipBaseline added unsampled pops to skip as baseline
+#' @keywords internal
+#' @noRd
+#' @export
+strat_otherPopERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline) {
+    .Call(`_gRandma_strat_otherPopERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline)
+}
+

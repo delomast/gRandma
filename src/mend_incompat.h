@@ -16,5 +16,16 @@ void calcProbMIperLocus_sP(const std::vector <std::vector <std::vector <int> > >
                         const std::vector <std::vector < std::vector <double> > >& genotypeErrorRatesC,
                         const std::vector <std::vector <std::vector <double> > >& lGenos_sP,
                         std::vector <double>& pMI);
+void calcProbMIperLocus_Unrel(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC,
+                        const std::vector< std::vector < std::vector <double> > >& genotypeErrorRatesC,
+                        const std::vector <std::vector <double> >& lGenos_one,
+                        const std::vector <std::vector <double> >& lGenos_two,
+                        std::vector <double>& pMI);
+void strat_lGenosBuilder_sP(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC,
+                        const std::vector< std::vector < std::vector <double> > >& genotypeErrorRatesC,
+                        const std::vector <std::vector <double> >& lGenos_base,
+                        const std::vector <std::vector <double> >& lGenos_randomDescendant,
+                        std::vector <std::vector <std::vector <double> > >& lGenos_OBS_sample_MI,
+								std::vector <std::vector <std::vector <double> > >& lGenos_OBS_sample_no_MI);
 
 #endif

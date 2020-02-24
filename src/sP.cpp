@@ -134,7 +134,7 @@ Rcpp::DataFrame sP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 			vector <double> pMI (genotypeKeyC.size(), 0.0); // p(MI|true parent) for each locus
 			calcProbMIperLocus_sP(genotypeKeyC, genotypeErrorRatesC, lGenos_sP, pMI);
 			
-			// now calculate the probability of sum(MI) = x | true grandparents
+			// now calculate the probability of sum(MI) = x
 			vector <double> pTotalMI (genotypeKeyC.size() + 1, -9); // probability of having x observed MI | true parent
 			calcProbSumMI(pMI, pTotalMI);
 			

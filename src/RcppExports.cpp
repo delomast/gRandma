@@ -118,6 +118,25 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// strat_otherPopERRORsP
+Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, Rcpp::NumericVector itersPerMI, int seed, Rcpp::NumericVector skipBaseline);
+RcppExport SEXP _gRandma_strat_otherPopERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP itersPerMISEXP, SEXP seedSEXP, SEXP skipBaselineSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type missingParams(missingParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type itersPerMI(itersPerMISEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type skipBaseline(skipBaselineSEXP);
+    rcpp_result_gen = Rcpp::wrap(strat_otherPopERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline));
+    return rcpp_result_gen;
+END_RCPP
+}
 
 static const R_CallMethodDef CallEntries[] = {
     {"_gRandma_ERRORsP", (DL_FUNC) &_gRandma_ERRORsP, 8},
@@ -126,6 +145,7 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gRandma_otherPopERRORssGP", (DL_FUNC) &_gRandma_otherPopERRORssGP, 9},
     {"_gRandma_sP", (DL_FUNC) &_gRandma_sP, 9},
     {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 10},
+    {"_gRandma_strat_otherPopERRORsP", (DL_FUNC) &_gRandma_strat_otherPopERRORsP, 9},
     {NULL, NULL, 0}
 };
 

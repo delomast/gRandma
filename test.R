@@ -896,16 +896,17 @@ falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 5000
 
 
 falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
-falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
-
+old <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
+new <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE, testBool = TRUE,
+						  itersPerMI = c(rep(1000, 10), rep(1, 340 - 10)))
+new[[1]]
+head(new[[2]])
+oneComp <- new[[2]]
+oneComp <- oneComp[oneComp$llrThreshold == 1 & oneComp$Pop_descendant == 0 & oneComp$Pop_baseline == 1,]
+head(oneComp)
+oneComp[1:20,4:6]
 
 falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
-falseGrandma(test, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
-
-exp(-2.07637)^2
-exp(-.87421)^2
-gmaInput3$genotypeKeys[1]
-
-str(gmaInput2)
+falseGrandma(test, "sP", c(.1, .2, .5), 10000, pairwise = FALSE)
 
 
