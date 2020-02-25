@@ -896,17 +896,25 @@ falseGrandma(testErrRepeat, relationship = "sP", llrToTest = c(1,5,10), N = 5000
 
 
 falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
-old <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE)
-new <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), 1000, pairwise = TRUE, testBool = TRUE,
+strat <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), errorType = "pairwise",
 						  itersPerMI = c(rep(1000, 10), rep(1, 340 - 10)))
-new[[1]]
-head(new[[2]])
-oneComp <- new[[2]]
+old <- strat[[1]]
+strat[[1]]
+
+strat[[2]][1:15,]
+head(strat[[2]])
+head(strat[[3]])
+head(strat[[4]])
+head(strat[[5]])
+oneComp <- strat[[2]]
 oneComp <- oneComp[oneComp$llrThreshold == 1 & oneComp$Pop_descendant == 0 & oneComp$Pop_baseline == 1,]
 head(oneComp)
-oneComp[1:20,4:6]
+oneComp[1:20,4:7]
 
-falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, pairwise = FALSE)
-falseGrandma(test, "sP", c(.1, .2, .5), 10000, pairwise = FALSE)
+falseGrandma(gmaInput3, "sP", c(1,5,8,10,14), 1000, errorType = "falseNeg")
 
-
+# "Unrel", "Aunt", "HalfAunt", "ParCous"
+strat <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), errorType = "Unrel",
+						  itersPerMI = c(rep(100, 10), rep(0, 340 - 10)))
+strat[[1]]
+strat[[2]][1:20,]

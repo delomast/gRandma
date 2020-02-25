@@ -146,10 +146,8 @@ void strat_lGenosBuilder_sP(const vector <vector <vector <int> > >& genotypeKeyC
                         const vector <vector <double> >& lGenos_base,
                         const vector <vector <double> >& lGenos_randomDescendant,
                         vector <vector <vector <double> > >& lGenos_OBS_sample_MI,
-								vector <vector <vector <double> > >& lGenos_OBS_sample_no_MI
-){
-
-// initialize with 0's
+								vector <vector <vector <double> > >& lGenos_OBS_sample_no_MI){
+	// initialize with 0's
 	int nLoci = genotypeKeyC.size();
 	for(int i = 0; i < nLoci; i++){ //for each locus
 		vector <vector <double> > tempLocus;
@@ -183,6 +181,85 @@ void strat_lGenosBuilder_sP(const vector <vector <vector <int> > >& genotypeKeyC
 				} else {
 					lGenos_OBS_sample_no_MI[i][p1][d] = tempOBSp;
 					no_MI_sum += tempOBSp;
+				}
+			}
+		}
+		
+		// normalize within each
+		for(int p1 = 0, nGeno = genotypeKeyC[i].size(); p1 < nGeno; p1++){
+			for(int d = 0; d < nGeno; d++){
+				lGenos_OBS_sample_MI[i][p1][d] /= MI_sum;
+				lGenos_OBS_sample_no_MI[i][p1][d] /= no_MI_sum;
+			}
+		}
+	}
+}
+
+
+// at each locus, calculate the probability of an observed MI
+//   given likelihoods (NOT log) for TRUE genotypes
+//   for two individuals (relatinoship unspecified, joint genotype probabilties given in input)
+void calcProbMIperLocus_Pair(const vector <vector <vector <int> > >& genotypeKeyC,
+                        const vector< vector < vector <double> > >& genotypeErrorRatesC,
+                        const vector <vector <vector <double> > >& lGenos_tRel,
+                        vector <double>& pMI){
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){
+		// summing accross all possible obs and true, calculate
+		// P(obs, true, MI | true parent) = P(MI|o)P(o|t)P(t|true parent)
+		for(int p1 = 0, max3 = genotypeKeyC[i].size(); p1 < max3; p1++){ // for all possible OBS genotypes
+			for(int d = 0; d < max3; d++){ 
+				//check if observed MI
+				if(!noAllelesInCommonSP(
+					genotypeKeyC[i][p1], // p1 genotype as vector of alleles
+					genotypeKeyC[i][d] // d genotype as vector of alleles
+					)
+				) continue;
+				for(int p1T = 0; p1T < max3; p1T++){ // for all possible TRUE genotypes
+					for(int dT = 0; dT < max3; dT++){
+						// P(MI|o)P(o|t)P(t|genotype frequencies)
+						// P(MI|o) = 1 b/c checked if observed MI above
+						pMI[i] += genotypeErrorRatesC[i][p1T][p1] * 
+							genotypeErrorRatesC[i][dT][d] * lGenos_tRel[i][p1T][dT];
+					}
+				}
+			}
+		}
+	}
+}
+
+
+void strat_lGenosBuilder_Pairwise(const vector <vector <vector <int> > >& genotypeKeyC,
+                        const vector< vector < vector <double> > >& genotypeErrorRatesC,
+                        const vector <vector <vector <double> > >& lGenos_tRel_OBS,
+                        vector <vector <vector <double> > >& lGenos_OBS_sample_MI,
+								vector <vector <vector <double> > >& lGenos_OBS_sample_no_MI){
+	// initialize with 0's
+	int nLoci = genotypeKeyC.size();
+	for(int i = 0; i < nLoci; i++){ //for each locus
+		vector <vector <double> > tempLocus;
+		for(int p1 = 0, max2 = genotypeKeyC[i].size(); p1 < max2; p1++){ //for each p1 genotype
+			vector <double> tempP1 (max2,0.0);
+			tempLocus.push_back(tempP1);
+		}
+		lGenos_OBS_sample_MI.push_back(tempLocus);
+		lGenos_OBS_sample_no_MI.push_back(tempLocus);
+	}
+	
+	for(int i = 0; i < nLoci; i++){
+		double MI_sum = 0;
+		double no_MI_sum = 0;
+		for(int p1 = 0, nGeno = genotypeKeyC[i].size(); p1 < nGeno; p1++){
+			for(int d = 0; d < nGeno; d++){
+				// determine if MI
+				if(noAllelesInCommonSP(
+				genotypeKeyC[i][p1], // p1 genotype as vector of alleles
+				genotypeKeyC[i][d] // d genotype as vector of alleles
+				)){
+					lGenos_OBS_sample_MI[i][p1][d] = exp(lGenos_tRel_OBS[i][p1][d]);
+					MI_sum += exp(lGenos_tRel_OBS[i][p1][d]);
+				} else {
+					lGenos_OBS_sample_no_MI[i][p1][d] = exp(lGenos_tRel_OBS[i][p1][d]);
+					no_MI_sum += exp(lGenos_tRel_OBS[i][p1][d]);
 				}
 			}
 		}

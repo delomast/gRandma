@@ -17,7 +17,7 @@ void pairwiseK_calc2(const std::vector <std::vector <std::vector <int> > >& geno
 	                      const int pop,
 	                      const std::vector <double>& k_prob,
 	                      std::vector <std::vector <std::vector <double> > >& lGenos_k);
-void create_pairswise_OBSvector(const std::vector <std::vector <std::vector <double> > >& lGenos_k, 
+void create_pairwise_OBSvector(const std::vector <std::vector <std::vector <double> > >& lGenos_k, 
                           const std::vector <std::vector <std::vector <double> > >& genotypeErrorRatesC, 
                           std::vector <std::vector <std::vector <double> > >& lGenos_k_OBS
                           );

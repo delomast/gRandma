@@ -89,8 +89,8 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 		randMissing.push_back(tempDist);
 	}
 	
-	vector <int> popResults; // pop that trios are simulated from
-	vector <int> popAssign; // pop that offspring are assigned to
+	vector <int> popResults; // pop that descendants are simulated from
+	vector <int> popAssign; // pop that baseline is simulated from
 	vector <double> llrRecord;
 	vector <double> falsePosAll;
 	vector <double> SDfalsePosAll;
@@ -264,7 +264,6 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 			}
 
 			// inititate results storage for this pop - one entry for each llr
-			vector <double> falsePos (llrToTestC.size(), 0);
 			vector <double> fp_SD_total (llrToTestC.size(), 0);
 
 			// save a vector of ints to select loci with MI
@@ -273,7 +272,7 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 			
 			for(int mi = 0, maxMI = itersPerMIC.size(); mi < maxMI; mi++){
 				Rcpp::checkUserInterrupt();
-				if(pTotalMI[mi] == 0) continue; // no need to sample strata with probability of 0 (capped by precision of double)
+				
 				for(int n = 0; n < itersPerMIC[mi]; n++){
 					if(n % 100 == 0) Rcpp::checkUserInterrupt();
 					
@@ -281,27 +280,19 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 					vector <int> p1Genos (nLoci, 0);
 					vector <int> dGenos (nLoci, 0);
 					// first choose loci with MI
-					vector <int> lociWithMI (mi, -9);
+					vector <bool> lociWithMI (nLoci, false);
 					vector <double> temp_pMI (pMI);
 					for(int i = 0; i < mi; i++){
-						lociWithMI[i] = sampleC(lociIndex, temp_pMI, rg);
-						temp_pMI[lociWithMI[i]] = 0;
+						int chosen = sampleC(lociIndex, temp_pMI, rg);
+						lociWithMI[chosen] = true;
+						temp_pMI[chosen] = 0;
 					}
-					// can optimize by switching halfway from choosing those WITH to those WITHOUT
-					// can optimize by using unordered map of loci wiht boolean indicating MI
 
 					// now choose genotypes
 					for(int i = 0; i < nLoci; i++){
 						// determine if MI
-						bool bMI = false;
-						for(int j = 0; j < mi; j++) {
-							if(i == lociWithMI[j]){
-								bMI = true;
-								break;
-							}
-						}
 						int tPair;
-						if(bMI){ // with MI
+						if(lociWithMI[i]){ // with MI
 							tPair = sampleC(combo[i], prob_MI[i], rg);
 						} else { // without MI
 							tPair = sampleC(combo[i], prob_no_MI[i], rg);
@@ -380,12 +371,17 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 					col_llr.push_back(llrToTestC[i]);
 					col_mi.push_back(j);
 					col_p.push_back(pTotalMI[j]);
-					col_fp.push_back(falsePosPerStrata[j][i] / itersPerMIC[j]);
-					double tVar = varianceEstim(itersPerMIC[j], falsePosPerStrata[j][i], 
-                                           falsePosPerStrata[j][i] / itersPerMIC[j]);
-					col_fpSD.push_back(sqrt(tVar));
-					// calculate SD as the strata SD are calculated
-					fp_SD_total[i] += pow(pTotalMI[j], 2) * (tVar / itersPerMIC[j]);
+					if(itersPerMIC[j] == 0){
+						col_fp.push_back(0);
+						col_fpSD.push_back(0);
+					} else {
+						col_fp.push_back(falsePosPerStrata[j][i] / itersPerMIC[j]);
+						double tVar = varianceEstim(itersPerMIC[j], falsePosPerStrata[j][i], 
+	                                           falsePosPerStrata[j][i] / itersPerMIC[j]);
+						col_fpSD.push_back(sqrt(tVar));
+						// calculate SD as the strata SD are calculated
+						fp_SD_total[i] += pow(pTotalMI[j], 2) * (tVar / itersPerMIC[j]);
+					}
 				}
 			}
 			fullOut.push_back(Rcpp::DataFrame::create(Rcpp::Named("Pop_descendant") = col_pop,
@@ -400,8 +396,8 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 			for(int i = 0, max2 = llrToTestC.size(); i < max2; i++){
 				// calculate the mean accross strata
 				double strata_fpMean = 0;
-				for(int j = 0, tmax = falsePosPerStrata.size(); j < tmax; j++) 
-					strata_fpMean += pTotalMI[j] * (falsePosPerStrata[j][i] / itersPerMIC[j]);
+				for(int j = 0, tmax = falsePosPerStrata.size(); j < tmax; j++) if(itersPerMIC[j] > 
+							0) strata_fpMean += pTotalMI[j] * (falsePosPerStrata[j][i] / itersPerMIC[j]);
 
 				popResults.push_back(pop);
 				popAssign.push_back(pop2);
@@ -415,11 +411,6 @@ Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams,
 			
 	} // end for pop
 
-	// testing output
-	
-	
-	// end testing output
-	
 	// organize as a DataFrame and return	
 	Rcpp::DataFrame results = Rcpp::DataFrame::create(Rcpp::Named("Pop_descendant") = popResults,
                                                    Rcpp::Named("Pop_baseline") = popAssign,

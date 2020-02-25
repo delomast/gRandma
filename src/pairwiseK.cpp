@@ -86,7 +86,7 @@ void pairwiseK_calc2(const vector <vector <vector <int> > >& genotypeKeyC,
 
 // calculate genotype LOG - likelihoods for pairwise relationship
 //	given OBSERVED genotypes - but only if NO MISSING genotypes
-void create_pairswise_OBSvector(const vector <vector <vector <double> > >& lGenos_k, 
+void create_pairwise_OBSvector(const vector <vector <vector <double> > >& lGenos_k, 
                           const vector< vector < vector <double> > >& genotypeErrorRatesC, 
                           vector <vector <vector <double> > >& lGenos_k_OBS
                           ){

@@ -18,8 +18,10 @@
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
-								 llrToTest, N = 10000, seed = NULL, pairwise = FALSE, testBool = FALSE, itersPerMI = NULL){
+								 llrToTest, N = 10000, seed = NULL, itersPerMI = NULL, 
+								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous")){
 	rel <- match.arg(relationship)
+	tRel <- match.arg(errorType)
 	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
 												 	as.numeric(format(Sys.time(), "%j")) * 
 												 	as.numeric(format(Sys.time(), "%M")))
@@ -31,7 +33,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	skipBaseline <- c() # so unsampled pops aren't tested as a baseline
 	if(!is.null(gmaData$unsampledPopsParams)){
 		useUnsamp <- TRUE
-		if(pairwise){
+		if(tRel == "pairwise"){
 			# need to perform pairwise with unsampled pops
 			addedUnsampledPopsNames <- paste0("UnsampledPop_", names(gmaData$unsampledPopsParams))
 			# just in case there is already a pop with that name
@@ -82,7 +84,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
 	
 	if(rel == "ssGP"){
-		if(pairwise){
+		if(tRel == "pairwise"){
 			errResults <- otherPopERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 							gmaData$missingParams, gmaData$genotypeKey,
 							 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
@@ -92,34 +94,61 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
                      gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
 		}
 	} else if(rel == "sP"){
-		if(pairwise){
-			if(testBool){
-				errResults <- strat_otherPopERRORsP(gmaData$baselineParams,
-	                           gmaData$unsampledPopsParams, gmaData$missingParams,
-	                           gmaData$genotypeKey,
-	                           gmaData$genotypeErrorRates, llrToTest,
-	                           itersPerMI,
-	                           round(seed), skipBaseline)
-				return(errResults)
-			} else {
-				errResults <- otherPopERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-					gmaData$missingParams, gmaData$genotypeKey,
-					gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
-			}
+		if(tRel == "pairwise"){
+			if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
+			if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be 0")
+			if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
+			if(any(itersPerMI < 1)) warning("some itersPerMI are less than 1, assuming the false positive rates
+													  for these strata are 0 with variance of 0.")
+
+			errResults <- strat_otherPopERRORsP(gmaData$baselineParams,
+	                          gmaData$unsampledPopsParams, gmaData$missingParams,
+	                          gmaData$genotypeKey,
+	                          gmaData$genotypeErrorRates, llrToTest,
+	                          itersPerMI,
+	                          round(seed), skipBaseline)
+
+			# this was input and function call for importance sampling routine
+			# saving in case remimplement later
+			# errResults <- otherPopERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+			# 	gmaData$missingParams, gmaData$genotypeKey,
+			# 	gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
 			
 
+		} else if(tRel == "falseNegative"){
+			errResults <- list(falseNeg_ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+				gmaData$missingParams, gmaData$genotypeKey,
+         gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+			)
+							# IS routine
+# 				errResults <- ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+# 					gmaData$missingParams, gmaData$genotypeKey,
+#             	gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+		} else if (tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous")) {
+			errResults <- strat_ERRORsP(gmaData$baselineParams,
+									gmaData$unsampledPopsParams, gmaData$missingParams,
+									gmaData$genotypeKey,
+									gmaData$genotypeErrorRates, llrToTest,
+									itersPerMI,
+									round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)])
 		} else {
-			errResults <- ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-					gmaData$missingParams, gmaData$genotypeKey,
-            gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+			stop("relationship and error type combination not recognized")
 		}
+
 	} else {
-		stop("This rel not set up at this time")
+		stop("This relationship not set up at this time")
 	}
 	
 	# turn pop names back to strings
-	if(pairwise) errResults[,2] <- popKey[match(errResults[,2], popKey[,2]),1]
-	errResults[,1] <- popKey[match(errResults[,1], popKey[,2]),1]
+	if(!is.data.frame(errResults)){
+		for(i in 1:length(errResults)){
+			if(tRel == "pairwise") errResults[[i]][,2] <- popKey[match(errResults[[i]][,2], popKey[,2]),1]
+			errResults[[i]][,1] <- popKey[match(errResults[[i]][,1], popKey[,2]),1]
+		}
+	} else {
+		if(tRel == "pairwise") errResults[,2] <- popKey[match(errResults[,2], popKey[,2]),1]
+		errResults[,1] <- popKey[match(errResults[,1], popKey[,2]),1]
+	}
 	
 	return(errResults)
 }

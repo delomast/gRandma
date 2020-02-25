@@ -37,6 +37,23 @@ ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotyp
     .Call(`_gRandma_ERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed)
 }
 
+#' estimatign error rates for parent - offspring pair vs unrelated
+#' Monte Carlo used for estimating false negative
+#' @param baselineParams Dirichlet parameters for allele frequencies
+#' @param unsampledPopParams Dirichlet parameters for allele frequencies
+#' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
+#' @param llrToTest Vector of llr's to test as threshold values
+#' @param N number of samples to take
+#' @keywords internal
+#' @noRd
+#' @export
+falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed) {
+    .Call(`_gRandma_falseNeg_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed)
+}
+
 #' estimating false positive error rates for single-sided grandparent pair vs unrelated
 #' with individuls from one population being assigned to a different population
 #' Importance sampling Monte Carlo used for estimating false positive
@@ -122,6 +139,26 @@ sP <- function(baseline, mixture, baselineParams, unsampledPopParams, genotypeKe
 #' @export
 ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates, saveLLR, MIexcludeProb, filterLLR) {
     .Call(`_gRandma_ssGP`, baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates, saveLLR, MIexcludeProb, filterLLR)
+}
+
+#' estimatign error rates for parent - offspring pair vs unrelated
+#' Monte Carlo used for estimating false negative
+#' Importance sampling Monte Carlo used for estimating false positive
+#' @param baselineParams Dirichlet parameters for allele frequencies
+#' @param unsampledPopParams Dirichlet parameters for allele frequencies
+#' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
+#' @param llrToTest Vector of llr's to test as threshold values
+#' @param N number of samples to take
+#' @param trueRel an integer indicating the true relationship to simulate: 0 = unrelated, 1 = aunt,
+#'   2 = half aunt, 3 = cousin of parent
+#' @keywords internal
+#' @noRd
+#' @export
+strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel) {
+    .Call(`_gRandma_strat_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel)
 }
 
 #' estimating false positive error rates for single-sided grandparent pair vs unrelated
