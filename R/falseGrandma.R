@@ -94,12 +94,15 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
                      gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
 		}
 	} else if(rel == "sP"){
-		if(tRel == "pairwise"){
+		if(tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous", "pairwise")){
 			if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
 			if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be 0")
 			if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
 			if(any(itersPerMI < 1)) warning("some itersPerMI are less than 1, assuming the false positive rates
 													  for these strata are 0 with variance of 0.")
+		}
+		if(tRel == "pairwise"){
+
 
 			errResults <- strat_otherPopERRORsP(gmaData$baselineParams,
 	                          gmaData$unsampledPopsParams, gmaData$missingParams,
