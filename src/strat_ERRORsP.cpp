@@ -69,6 +69,8 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 	// end conversion of types
 	////////////////////
 
+	if(itersPerMIC.size() != (genotypeKeyC.size() + 1)) Rcpp::stop("Error: the length of itersPerMI is not equal to the number of loci + 1.");
+
 	int nLoci = genotypeKeyC.size();
 	
 	// initiate random number generator
