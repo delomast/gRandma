@@ -918,3 +918,20 @@ strat <- falseGrandma(gmaInput3, "sP", c(1,5,8,10), errorType = "Unrel",
 						  itersPerMI = c(rep(100, 10), rep(0, 340 - 10)))
 strat[[1]]
 strat[[2]][1:20,]
+
+load("S:/Eagle Fish Genetics Lab/Tom/microhap discov call/forTestingGma.rda")
+
+gmaBoth <- createGmaInput_flex(baseline = snpsAndMicrohaps, perLocusError = .005, dropoutProb = .01)
+
+names(gmaBoth)
+gmaBoth$genotypeErrorRates[["Omy_RAD7016-31.A1"]]
+gmaBoth$alleleKeys[["Omy_RAD7016-31.A1"]]
+
+
+both <- falseGrandma(gmaBoth, relationship = "sP", llrToTest = c(10,15,20), N = 10000,
+								  itersPerMI = c(rep(5000, 7), rep(0,338 - 7)), errorType = "falseNegative")
+
+gmaSNPs <- createGmaInput_flex(baseline = snp_genotypes, perLocusError = .005, dropoutProb = .01)
+
+snps <- falseGrandma(gmaSNPs, relationship = "sP", llrToTest = c(10,15,20), N = 10000,
+								  itersPerMI = c(rep(5000, 7), rep(0,339 - 7)), errorType = "falseNegative")

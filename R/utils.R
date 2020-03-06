@@ -82,3 +82,7 @@ convertMissing <- function(v){
 	return(v)
 }
 
+defaultAlleleDistFunc <- function(x){
+	return(1/x)
+}
+
