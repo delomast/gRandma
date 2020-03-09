@@ -16,7 +16,7 @@
 #'   column 2 is the individual's identifier
 #'   (not currently used, but must be present). The following columns are genotypes, in the same manner as for \code{baseline}. 
 #'   The order and column names of the loci must be the same as in the baseline and mixture dataframes.
-#' @param perLocusError either a constant value representing the probability of a genotyping error (probability of 
+#' @param perAlleleError either a constant value representing the per allele error rate (probability of 
 #'   observing any allele other than the correct allele)
 #'   to use across all loci, or a dataframe with each row representing a locus. Column 1 is the locus name,
 #'   and column 2 is the error rate (probability of observing any allele other than the correct allele).
@@ -28,14 +28,14 @@
 #'   basepair distances for snps/microhaps,
 #'   or the numeric distance for microsats) as input, and outputs the weight to give the probabilty of misgenotyping one allele
 #'   as the other. The default is weight = 1/x where x is the distance. The probabilty of misgenotyping is the normalized weight
-#'   multiplied by the perLocusError for that locus.
+#'   multiplied by the perAlleleError for that locus.
 #' @importFrom Rcpp evalCpp
 #' @useDynLib gRandma, .registration=TRUE
 #' @export
 
 # this version is being written to be more flexible with error models
 
-createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perLocusError = NULL, dropoutProb = NULL,
+createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAlleleError = NULL, dropoutProb = NULL,
 										  markerType = c("microhaps", "snps", "microsats"), 
 										  alleleDistFunc = NULL){
 	
@@ -77,14 +77,14 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perLo
 		if(markers != markersUnsamp) stop("error, the loci are either not the same or not in the same order between the baseline and unsampledPops.")
 	}
 	
-	# if perLocusError is a constant
-	if(is.numeric(perLocusError))	{
-		if(length(perLocusError) != 1) stop("perLocusError must either be a single number or a data frame")
-		perLocusError <- data.frame(locus = markers, error = perLocusError, stringsAsFactors = FALSE)
+	# if perAlleleError is a constant
+	if(is.numeric(perAlleleError))	{
+		if(length(perAlleleError) != 1) stop("perAlleleError must either be a single number or a data frame")
+		perAlleleError <- data.frame(locus = markers, error = perAlleleError, stringsAsFactors = FALSE)
 	}
-	if(any(perLocusError[,2] < 0 | perLocusError[,2] > 1)) stop("perLocusError must be between 0 and 1, inclusive")
+	if(any(perAlleleError[,2] < 0 | perAlleleError[,2] > 1)) stop("perAlleleError must be between 0 and 1, inclusive")
 	
-	if(any(!(markers %in% perLocusError[,1]))) stop("not all markers have entries in perSNPerror")
+	if(any(!(markers %in% perAlleleError[,1]))) stop("not all markers have entries in perSNPerror")
 
 	# input error check
 	if(is.numeric(dropoutProb) && length(dropoutProb) != 1) stop("dropoutProb must either be a single number or a data frame")
@@ -117,8 +117,8 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perLo
 
 		mName <- colnames(baseline)[m]
 		
-		tempPerLocusError <- perLocusError[perLocusError[,1] == mName,2]
-		if(length(tempPerLocusError) != 1) stop(mName, " should only have one entry in perLocusError")
+		tempperAlleleError <- perAlleleError[perAlleleError[,1] == mName,2]
+		if(length(tempperAlleleError) != 1) stop(mName, " should only have one entry in perAlleleError")
 
 		# get all alleles
 		alleles <- sort(unique(c(baseline[,m], baseline[,m+1], mixture[,m-1], mixture[,m])))
@@ -183,8 +183,8 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perLo
 		# normalize and multiply by per locus error rate
 		# NOTE we are assigning results to alleleErr and leaving alleleDist unchanged
 		for(i in 1:numAlleles){
-			alleleErr[i,] <- (alleleDist[i,] / sum(alleleDist[i,])) * tempPerLocusError
-			alleleErr[i,i] <- 1 - tempPerLocusError # prob of not making an error
+			alleleErr[i,] <- (alleleDist[i,] / sum(alleleDist[i,])) * tempperAlleleError
+			alleleErr[i,i] <- 1 - tempperAlleleError # prob of not making an error
 		}
 
 		# now per genotype error rates
