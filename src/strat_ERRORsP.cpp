@@ -13,9 +13,8 @@ using namespace std;
 // Enable C++11 via this plugin (Rcpp 0.10.3 or later)
 // [[Rcpp::plugins(cpp11)]]
 
-//' estimatign error rates for parent - offspring pair vs unrelated
-//' Monte Carlo used for estimating false negative
-//' Importance sampling Monte Carlo used for estimating false positive
+//' estimating positive error rates for parent - offspring pairs
+//' stratified Monte Carlo used for estimating false positive
 //' @param baselineParams Dirichlet parameters for allele frequencies
 //' @param unsampledPopParams Dirichlet parameters for allele frequencies
 //' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
@@ -157,7 +156,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		}
 
 		/*
-		 * calculate genotype likelihoods for relationship (example her is aunt/uncle - niece/nephew)
+		 * calculate genotype likelihoods for relationship (example here is aunt/uncle - niece/nephew)
 		 * Index 1 is locus, 2 is aunt/uncle geno, 3 is niece/nephew geno
 		 * value is likelihood (NOT log)
 		 */
@@ -204,7 +203,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		createSP_OBSvector(lGenos_sP, genotypeErrorRatesC, lGenos_sP_OBS, 
                   lGenos_base, lGenos_unsamp, lGenos_Unrelated_OBS);
 		
-		// first calculate the probability of MI at each locus | unrelated desc and baseline individuals
+		// first calculate the probability of MI at each locus | relationship
 		vector <double> pMI (genotypeKeyC.size(), 0.0); // p(MI) observed for each locus
 		calcProbMIperLocus_Pair(genotypeKeyC, genotypeErrorRatesC, lGenos_tRel, pMI);
 		// for(int i=0; i < pMI.size(); i++) Rcpp::Rcout << pMI[i] << " "; // testing
@@ -220,7 +219,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		/*
 		 * calculate probability of pairs of OBSERVED genotypes given MI at a locus or given no MI at a locus 
 		 * indices are: locus, baseline genotype, desc genotype
-		 * value is probability / likelihood NOT log
+		 * value is probability NOT log
 		 */
 		vector <vector <vector <double> > > lGenos_OBS_sample_MI;
 		vector <vector <vector <double> > > lGenos_OBS_sample_no_MI;
@@ -327,30 +326,23 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 					int obs_p1 = p1Genos[j];
 					int obs_d = dGenos[j];
 					
-					// if missing genotypes
-					if(obs_p1 == -9 || obs_d == -9){
+					if(obs_d == -9) continue; // no information
+					
+					// if parent is missing, there is information IF there is an "unsampled pop"
+					// because allele freqs will be different whether it is an offspring or not
+					if(obs_p1 == -9){
+						// at some point, can make another lookup table for this
 						double u_likelihood = 0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
 						double p_likelihood = 0;
-						double pOA_p1, pOA_d; // prob of observed given actual
+						double pOA_d; // prob of observed given actual
 						for(int p1 = 0, max3 = genotypeKeyC[j].size(); p1 < max3; p1++){ // for each possible p1 genotype
 								for(int d = 0; d < max3; d++){ // for each possible d genotype
-									if(obs_p1 == -9){
-										pOA_p1 = 1;
-									} else {
-										pOA_p1 = genotypeErrorRatesC[j][p1][obs_p1];
-									}
-									if(obs_d == -9){
-										pOA_d = 1;
-									} else {
-										pOA_d = genotypeErrorRatesC[j][d][obs_d];
-									}
+									pOA_d = genotypeErrorRatesC[j][d][obs_d];
 									// unrelated
 									// P(p1|baseline pop)P(d|unsampled pop)P(p1|obs_p1)P(d|obs_d)
-									u_likelihood += exp(lGenos_base[j][p1] + lGenos_unsamp[j][d]) * 
-										 pOA_p1 * pOA_d;
+									u_likelihood += exp(lGenos_base[j][p1] + lGenos_unsamp[j][d]) * pOA_d;
 									// pair
-									p_likelihood += lGenos_sP[j][p1][d] *
-										pOA_p1 * pOA_d;
+									p_likelihood += lGenos_sP[j][p1][d] * pOA_d;
 								}
 							
 						}

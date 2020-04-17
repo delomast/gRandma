@@ -27,3 +27,8 @@ gmaInputSawt$baseline[1:200,2]
 crossRec <- data.frame("OtsSAWT14S", gmaInputSawt$baseline[1:100,2], gmaInputSawt$baseline[101:200,2])
 assignGP2 <- inferGrandma(gmaInputSawt, relationship = c("ssGP"), crossRecords = crossRec, minLLR = 0,
 								 filterLLR = TRUE, MIexcludeProb = .0001)
+identical(assignGP, assignGP2)
+all.equal(assignGP, assignGP2)
+head(assignGP)
+head(assignGP2)
+

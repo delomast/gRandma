@@ -205,7 +205,7 @@ void calcProbMIperLocus_Pair(const vector <vector <vector <int> > >& genotypeKey
                         vector <double>& pMI){
 	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){
 		// summing accross all possible obs and true, calculate
-		// P(obs, true, MI | true parent) = P(MI|o)P(o|t)P(t|true parent)
+		// P(obs, true, MI | relationship) = P(MI|o)P(o|t)P(t|relationship)
 		for(int p1 = 0, max3 = genotypeKeyC[i].size(); p1 < max3; p1++){ // for all possible OBS genotypes
 			for(int d = 0; d < max3; d++){ 
 				//check if observed MI

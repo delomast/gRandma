@@ -197,30 +197,23 @@ Rcpp::DataFrame sP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 					int obs_p1 = baselineC[baseInds[i]][j+2];
 					int obs_d = mixtureC[m][j+1];
 
-					// if missing genotypes
-					if(obs_p1 == -9 || obs_d == -9){
+					if(obs_d == -9) continue; // no information
+					
+					// if parent is missing, there is information IF there is an "unsampled pop"
+					// because allele freqs will be different whether it is an offspring or not
+					if(obs_p1 == -9){
+						// at some point, can make another lookup table for this
 						double u_likelihood = 0.0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
 						double p_likelihood = 0.0;
-						double pOA_p1, pOA_d; // prob of observed given actual
+						double pOA_d; // prob of observed given actual
 						for(int p1 = 0, max3 = genotypeKeyC[j].size(); p1 < max3; p1++){ // for each possible p1 genotype
 								for(int d = 0; d < max3; d++){ // for each possible d genotype
-									if(obs_p1 == -9){
-										pOA_p1 = 1.0;
-									} else {
-										pOA_p1 = genotypeErrorRatesC[j][p1][obs_p1];
-									}
-									if(obs_d == -9){
-										pOA_d = 1.0;
-									} else {
-										pOA_d = genotypeErrorRatesC[j][d][obs_d];
-									}
+									pOA_d = genotypeErrorRatesC[j][d][obs_d];
 									// unrelated
 									// P(p1|baseline pop)P(d|unsampled pop)P(p1|obs_p1)P(d|obs_d)
-									u_likelihood += exp(lGenos_base[j][p1] + lGenos_unsamp[j][d]) * 
-										 pOA_p1 * pOA_d;
+									u_likelihood += exp(lGenos_base[j][p1] + lGenos_unsamp[j][d]) * pOA_d;
 									// grandparent pair
-									p_likelihood += lGenos_sP[j][p1][d] *
-										pOA_p1 * pOA_d;
+									p_likelihood += lGenos_sP[j][p1][d] * pOA_d;
 								}
 							
 						}

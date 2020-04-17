@@ -141,9 +141,8 @@ ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopPa
     .Call(`_gRandma_ssGP`, baseline, mixture, crossRecords, baselineParams, unsampledPopParams, genotypeKey, genotypeErrorRates, saveLLR, MIexcludeProb, filterLLR)
 }
 
-#' estimatign error rates for parent - offspring pair vs unrelated
-#' Monte Carlo used for estimating false negative
-#' Importance sampling Monte Carlo used for estimating false positive
+#' estimating positive error rates for parent - offspring pairs
+#' stratified Monte Carlo used for estimating false positive
 #' @param baselineParams Dirichlet parameters for allele frequencies
 #' @param unsampledPopParams Dirichlet parameters for allele frequencies
 #' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)

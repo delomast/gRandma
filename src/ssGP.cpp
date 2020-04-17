@@ -234,9 +234,14 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 					int obs_gp1 = baselineC[pairs[i][0]][j+2];
 					int obs_gp2 = baselineC[pairs[i][1]][j+2];
 					int obs_d = mixtureC[m][j+1];
+					
+					// if desc missing, no information about the relationship
+					if(obs_d == -9) continue;
 
-					// if missing genotypes
-					if(obs_gp1 == -9 || obs_gp2 == -9 || obs_d == -9){
+					// if missing genotypes, information if only one missing OR if an unsampled pop
+					//   b/c allele freqs will be different whether its a descendant or not
+					if(obs_gp1 == -9 || obs_gp2 == -9){
+						// could make lookup tables for these
 						double u_likelihood = 0.0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
 						double gp_likelihood = 0.0;
 						double pOA_gp1, pOA_gp2, pOA_d; // prob of observed given actual
@@ -253,11 +258,8 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 									} else {
 										pOA_gp2 = genotypeErrorRatesC[j][gp2][obs_gp2];
 									}
-									if(obs_d == -9){
-										pOA_d = 1.0;
-									} else {
-										pOA_d = genotypeErrorRatesC[j][d][obs_d];
-									}
+									pOA_d = genotypeErrorRatesC[j][d][obs_d];
+									
 									// unrelated
 									// P(gp1|baseline pop)P(gp2|baseline pop)P(d|unsampled pop)P(gp1|obs_gp1)P(gp2|obs_gp2)P(d|obs_d)
 									u_likelihood += exp(lGenos_base[j][gp1] + lGenos_base[j][gp2] + lGenos_unsamp[j][d]) * 
