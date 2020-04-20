@@ -31,7 +31,7 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
                            Rcpp::List genotypeKey,
                            Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest,
                            int N,
-                           int seed
+                           int seed, double MIexcludeProb
 ){
 	//////////////////////
 	// first, turn all inputs into non-Rcpp c++ classes
@@ -81,7 +81,9 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
 	vector <double> llrRecord;
 	vector <double> falseNegAll;
 	vector <double> SDfalseNegAll;
-
+	
+	if(MIexcludeProb == 0) Rcpp::Rcout<<"MIexcludeProb was not greater than zero, so only the LLR will be used to"<<
+		" accept or reject assignments.\n";
 	
 	// for each baseline population
 	for(int pop = 0, max = baselineParamsC.size(); pop < max; pop++){
@@ -136,6 +138,37 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
 		createSP_OBSvector(lGenos_sP, genotypeErrorRatesC, lGenos_sP_OBS, 
                   lGenos_base, lGenos_unsamp, lGenos_Unrelated_OBS);
 		
+		/* calculate number of MI allowed to consider a pair of potential grandparents
+		 * for each locus calculating P(obs, true, MI | true parent), then summing to get marginal P(MI | parent)
+		 * then sum across loci to get P(sum(MI) > threshold | true parent)
+		 * MIexcludeProb is the target maximum probability that a true trio is removed for having too many MI
+		 * miLimit is the maximum number of MI allowed to satisfy MIexcludeProb
+		 */
+		int miLimit = genotypeKeyC.size();
+		if(MIexcludeProb > 0){
+			// first calculate the probability of MI at each locus | true parent
+			vector <double> pMI (genotypeKeyC.size(), 0.0); // p(MI|true parent) for each locus
+			calcProbMIperLocus_sP(genotypeKeyC, genotypeErrorRatesC, lGenos_sP, pMI);
+			
+			// now calculate the probability of sum(MI) = x
+			vector <double> pTotalMI (genotypeKeyC.size() + 1, -9); // probability of having x observed MI | true parent
+			calcProbSumMI(pMI, pTotalMI);
+			
+			// now find miLimit such that P(sum(MI) > miLimit) < MIexcludeProb
+			double runningSum = 0.0;
+			for(int i = 0, max = pTotalMI.size(); i < max; i++){
+				runningSum += pTotalMI[i];
+				if(runningSum > (1 - MIexcludeProb)){
+					miLimit = i;
+					break;
+				}
+			}
+			// for(int i=0;i<10;i++) Rcpp::Rcout<<pTotalMI[i]<<"\n"; //testing
+			Rcpp::Rcout<<"The maximum number of Mendalian incompatibilities allowed"<<
+				" is: "<<miLimit<<". The probability of exclusion for a true parent (given no missing genotypes) is estimated as: "<<
+					1 - runningSum<<".\n";
+		}
+		
 		/*
 		 * rearranging lGenos_ssGP_OBS to be easier to use for sampling pair genotypes
 		 * So for each locus, combo has the index of each trio Genotype combination
@@ -184,6 +217,31 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
 				for(int j = 0; j < 2; j++) if(randMissing[i](rg)) sampPair[j] = -9;
 				p1Genos[i] = sampPair[0];
 				dGenos[i] = sampPair[1];
+			}
+			
+			// filter by number of obsereved MI (with missing data), if desired
+			if(MIexcludeProb > 0){
+				int countMI = 0;
+				bool skip = false;
+				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ // for each locus
+					int p1Geno = p1Genos[j];
+					int dGeno = dGenos[j];
+					if(p1Geno == -9 || dGeno == -9) continue; // skip if any missing
+					if(noAllelesInCommonSP(
+							genotypeKeyC[j][p1Geno], // p1 genotype as vector of alleles
+                      genotypeKeyC[j][dGeno] // o genotype as vector of alleles
+					)
+					) countMI++;
+					if (countMI > miLimit){
+						skip = true;
+						break;
+					}
+				}
+				if(skip){
+					// if too many MIs, then this is a false negative for all LLRs
+					for(int i = 0, max = llrToTestC.size(); i < max; i++) falseNeg[i]++;
+					continue;
+				}
 			}
 			
 			// calc LLR

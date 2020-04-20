@@ -112,14 +112,14 @@ int sampleC(const vector <int>& items, const vector <double>& probs, mt19937& rN
 	// now change to section of the interval from 0-cumulSum and remove items with prob of 0
 	double cumulSum = 0;
 	for(int i=0, max = probs.size(); i<max; i++){
-		if(probs[i] < 0) Rcpp::stop("invalid probs to sampleC");
+		if(probs[i] < 0) Rcpp::stop("internal error: invalid probs to sampleC");
 		if(probs[i] > 0){
 			cumulSum += probs[i];
 			newProbs.push_back(cumulSum);
 			newItems.push_back(items[i]);
 		}
 	}
-	if (newProbs.size() == 0) Rcpp::stop("all 0 probs to sampleC");
+	if (newProbs.size() == 0) Rcpp::stop("internal error: all 0 probs to sampleC");
 	// end input check
 	
 	// get random uniform
@@ -131,7 +131,11 @@ int sampleC(const vector <int>& items, const vector <double>& probs, mt19937& rN
 			return newItems[i];
 		}
 	}
-	Rcpp::stop("internal error in sampleC, no result chosen");
+	// Rcpp::Rcout << rN << "\n";
+	// Rcpp::Rcout << numeric_limits<double>::min() << "\n";
+	// Rcpp::Rcout << numeric_limits<double>::denorm_min() << "\n";
+	// for(int i=0, max=newProbs.size(); i<max; i++) Rcpp::Rcout << newProbs[i] << "\n";
+	Rcpp::stop("internal error: in sampleC, no result chosen");
 	return 0;
 }
 

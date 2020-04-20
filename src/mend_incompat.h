@@ -12,6 +12,8 @@ void calcProbMIperLocus(const std::vector <std::vector <std::vector <int> > >& g
                         const std::vector <std::vector <std::vector <std::vector <double> > > >& lGenos_ssGP,
                         std::vector <double>& pMI);
 void calcProbSumMI(const std::vector <double>& pMI, std::vector <double>& pTotalMI);
+void calcProbSumMI_returnAll(const std::vector <double>& pMI, std::vector <double>& pTotalMI,
+                             std::vector <std::vector <double> >& all_pTotalMI);
 void calcProbMIperLocus_sP(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC,
                         const std::vector <std::vector < std::vector <double> > >& genotypeErrorRatesC,
                         const std::vector <std::vector <std::vector <double> > >& lGenos_sP,

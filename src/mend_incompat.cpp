@@ -66,6 +66,25 @@ void calcProbSumMI(const vector <double>& pMI, vector <double>& pTotalMI){
 	}
 }
 
+// calculate the probability of sum(MI) = x and return these for each step
+void calcProbSumMI_returnAll(const vector <double>& pMI, vector <double>& pTotalMI,
+                             vector <vector <double> >& all_pTotalMI){
+	pTotalMI[0] = 1; // start at 0
+	all_pTotalMI.push_back(pTotalMI);
+	for(int i = 0, max = pMI.size(); i < max; i++){ // for all loci
+		vector <double> tempVec (i+2, 0);
+		for(int j = 0; j < (i+1); j++){ // for all possible states to be in
+			// for all possible states to move too
+			// stay in state j
+			tempVec[j] += pTotalMI[j] * (1 - pMI[i]);
+			// move to state j + 1
+			tempVec[j + 1] += pTotalMI[j] * pMI[i];
+		}
+		for(int j = 0; j < (i+2); j++) pTotalMI[j] = tempVec[j];
+		all_pTotalMI.push_back(pTotalMI);
+	}
+}
+
 //////////////////////
 //////////////////////
 // begin single parent MI functions
@@ -208,7 +227,7 @@ void calcProbMIperLocus_Pair(const vector <vector <vector <int> > >& genotypeKey
 		// P(obs, true, MI | relationship) = P(MI|o)P(o|t)P(t|relationship)
 		for(int p1 = 0, max3 = genotypeKeyC[i].size(); p1 < max3; p1++){ // for all possible OBS genotypes
 			for(int d = 0; d < max3; d++){ 
-				//check if observed MI
+				// check if observed MI
 				if(!noAllelesInCommonSP(
 					genotypeKeyC[i][p1], // p1 genotype as vector of alleles
 					genotypeKeyC[i][d] // d genotype as vector of alleles

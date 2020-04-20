@@ -50,8 +50,8 @@ ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotyp
 #' @keywords internal
 #' @noRd
 #' @export
-falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed) {
-    .Call(`_gRandma_falseNeg_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed)
+falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb) {
+    .Call(`_gRandma_falseNeg_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb)
 }
 
 #' estimating false positive error rates for single-sided grandparent pair vs unrelated
@@ -156,8 +156,8 @@ ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopPa
 #' @keywords internal
 #' @noRd
 #' @export
-strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel) {
-    .Call(`_gRandma_strat_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel)
+strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb) {
+    .Call(`_gRandma_strat_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb)
 }
 
 #' estimating false positive error rates for single-sided grandparent pair vs unrelated
@@ -179,7 +179,7 @@ strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, gen
 #' @keywords internal
 #' @noRd
 #' @export
-strat_otherPopERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline) {
-    .Call(`_gRandma_strat_otherPopERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline)
+strat_otherPopERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb) {
+    .Call(`_gRandma_strat_otherPopERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb)
 }
 

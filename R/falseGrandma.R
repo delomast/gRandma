@@ -19,7 +19,8 @@
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
 								 llrToTest, N = 10000, seed = NULL, itersPerMI = NULL, 
-								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous")){
+								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous"),
+								 MIexcludeProb = .0001){
 	rel <- match.arg(relationship)
 	tRel <- match.arg(errorType)
 	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
@@ -100,42 +101,32 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 			if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
 			if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")
 			if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
-			if(any(itersPerMI < 1)) warning("some itersPerMI are less than 1, assuming the false positive rates
-													  for these strata are 0 with variance of 0.")
+			if(any(itersPerMI < 0)) stop("some itersPerMI are negative.")
 		}
 		if(tRel == "pairwise"){
-
 
 			errResults <- strat_otherPopERRORsP(gmaData$baselineParams,
 	                          gmaData$unsampledPopsParams, gmaData$missingParams,
 	                          gmaData$genotypeKey,
 	                          gmaData$genotypeErrorRates, llrToTest,
 	                          itersPerMI,
-	                          round(seed), skipBaseline)
-
-			# this was input and function call for importance sampling routine
-			# saving in case remimplement later
-			# errResults <- otherPopERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-			# 	gmaData$missingParams, gmaData$genotypeKey,
-			# 	gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
-			
+	                          round(seed), skipBaseline, MIexcludeProb)
 
 		} else if(tRel == "falseNegative"){
 			errResults <- list(falseNeg_ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-				gmaData$missingParams, gmaData$genotypeKey,
-         gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
-			)
-							# IS routine
-# 				errResults <- ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-# 					gmaData$missingParams, gmaData$genotypeKey,
-#             	gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+						gmaData$missingParams, gmaData$genotypeKey,
+		         gmaData$genotypeErrorRates, llrToTest, round(N), round(seed),
+						MIexcludeProb)
+				)
+
 		} else if (tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous")) {
 			errResults <- strat_ERRORsP(gmaData$baselineParams,
 									gmaData$unsampledPopsParams, gmaData$missingParams,
 									gmaData$genotypeKey,
 									gmaData$genotypeErrorRates, llrToTest,
 									itersPerMI,
-									round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)])
+									round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)],
+									MIexcludeProb)
 		} else {
 			stop("relationship and error type combination not recognized")
 		}

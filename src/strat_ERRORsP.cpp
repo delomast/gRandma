@@ -34,7 +34,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
                            Rcpp::List genotypeKey,
                            Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest,
                            Rcpp::NumericVector itersPerMI,
-                           int seed, int trueRel){
+                           int seed, int trueRel, double MIexcludeProb){
 	//////////////////////
 	// first, turn all inputs into non-Rcpp c++ classes
 
@@ -129,6 +129,9 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 	}
 	fpSDColName += "SD";
 	
+	if(MIexcludeProb == 0) Rcpp::Rcout<<"MIexcludeProb was not greater than zero, so only the LLR will be used to"<<
+			" accept or reject assignments.\n";
+	
 	// for each baseline population
 	for(int pop = 0, max = baselineParamsC.size(); pop < max; pop++){
 		Rcpp::Rcout<<"Now beginning baseline population "<<pop + 1<<"\n";
@@ -203,18 +206,41 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		createSP_OBSvector(lGenos_sP, genotypeErrorRatesC, lGenos_sP_OBS, 
                   lGenos_base, lGenos_unsamp, lGenos_Unrelated_OBS);
 		
+		// these are all p(MI | neither genotype is missing)
+
 		// first calculate the probability of MI at each locus | relationship
 		vector <double> pMI (genotypeKeyC.size(), 0.0); // p(MI) observed for each locus
 		calcProbMIperLocus_Pair(genotypeKeyC, genotypeErrorRatesC, lGenos_tRel, pMI);
-		// for(int i=0; i < pMI.size(); i++) Rcpp::Rcout << pMI[i] << " "; // testing
-		// Rcpp::Rcout << "\n\n\n";
 		
 		// then calculate probability of sum(MI) = x for x in [0, num_loci]
-		vector <double> pTotalMI (genotypeKeyC.size() + 1, -9); // probability of having x observed MI
-		calcProbSumMI(pMI, pTotalMI);
-		// for(int i=0; i < pTotalMI.size(); i++) Rcpp::Rcout << i << ": " << pTotalMI[i] << " \n"; // testing
-		// Rcpp::Rcout << "\n\n";
-		// Rcpp::stop("here");
+		vector <double> pTotalMI (genotypeKeyC.size() + 1, 0); // probability of having x observed MI
+		vector <vector <double> > all_pTotalMI; // pTotalMI for each step
+		calcProbSumMI_returnAll(pMI, pTotalMI, all_pTotalMI);
+		
+		int miLimit = genotypeKeyC.size();
+		if(MIexcludeProb > 0){
+			// first calculate the probability of MI at each locus | true parent
+			vector <double> pMI_sP (genotypeKeyC.size(), 0.0); // p(MI|true parent) for each locus
+			calcProbMIperLocus_sP(genotypeKeyC, genotypeErrorRatesC, lGenos_sP, pMI_sP);
+			
+			// now calculate the probability of sum(MI) = x
+			vector <double> pTotalMI_sP (genotypeKeyC.size() + 1, -9); // probability of having x observed MI | true parent
+			calcProbSumMI(pMI_sP, pTotalMI_sP);
+			
+			// now find miLimit such that P(sum(MI) > miLimit) < MIexcludeProb
+			double runningSum = 0.0;
+			for(int i = 0, max = pTotalMI_sP.size(); i < max; i++){
+				runningSum += pTotalMI_sP[i];
+				if(runningSum > (1 - MIexcludeProb)){
+					miLimit = i;
+					break;
+				}
+			}
+			Rcpp::Rcout<<"The maximum number of Mendalian incompatibilities allowed"<<
+				" is: "<<miLimit<<". The probability of exclusion for a true parent (given no missing genotypes) is estimated as: "<<
+					1 - runningSum<<".\n";
+		}
+		
 		
 		/*
 		 * calculate probability of pairs of OBSERVED genotypes given MI at a locus or given no MI at a locus 
@@ -226,14 +252,6 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		strat_lGenosBuilder_Pairwise(genotypeKeyC, genotypeErrorRatesC, lGenos_tRel_OBS,
                         lGenos_OBS_sample_MI,
 								lGenos_OBS_sample_no_MI);
-		// for(int i = 0; i < 1; i++){
-		// 	for(int j = 0; j < lGenos_OBS_sample_MI[i].size(); j++){
-		// 		for(int k = 0; k < lGenos_OBS_sample_MI[i].size(); k++){
-		// 			Rcpp::Rcout << j << " " << k << " " << lGenos_OBS_sample_MI[i][j][k] << " " << lGenos_OBS_sample_no_MI[i][j][k] << "\n";
-		// 		}
-		// 	}
-		// }
-		// Rcpp::stop("here");
 		
 		/*
 		 * now making lGenos_OBS_sample_(MI / no_MI) easier to sample from
@@ -278,14 +296,25 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 
 		// inititate results storage for this pop - one entry for each llr
 		vector <double> fp_SD_total (llrToTestC.size(), 0);
+		
+		// two vectors to use with sampleC below
+		vector <double> probs_MI_NoMI (2, 0);
+		vector <int> select_MI (2);
+		select_MI[0] = 1;
+		select_MI[1] = 0;
 
-		// save a vector of ints to select loci with MI
-		vector <int> lociIndex(nLoci, 0);
-		for(int i=0; i < nLoci; i++) lociIndex[i] = i;
-		
-		
 		for(int mi = 0, maxMI = itersPerMIC.size(); mi < maxMI; mi++){
 			Rcpp::checkUserInterrupt();
+			// check if prob of seeing this many MIs is zero
+			// if it's zero, throw a warning and skip this stratum
+			if (pTotalMI[mi] <= numeric_limits<double>::min() && itersPerMIC[mi] > 0){
+				string errMess = "The probability of observing ";
+				errMess += to_string(mi); 
+				errMess += " Mendelian incompatibilities for this relationship is 0. "; 
+				errMess += "Skipping all iterations in this stratum."; 
+				Rcpp::warning(errMess);
+				continue;
+			}
 			
 			for(int n = 0; n < itersPerMIC[mi]; n++){
 				if(n % 100 == 0) Rcpp::checkUserInterrupt();
@@ -293,13 +322,25 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 				// simulate pair
 				vector <int> p1Genos (nLoci, 0);
 				vector <int> dGenos (nLoci, 0);
+				
+				// backwards algorithm
 				// first choose loci with MI
+				// all_pTotalMI[i][j] this is, after locus i, prob of being in stage j 
 				vector <bool> lociWithMI (nLoci, false);
-				vector <double> temp_pMI (pMI);
-				for(int i = 0; i < mi; i++){
-					int chosen = sampleC(lociIndex, temp_pMI, rg);
-					lociWithMI[chosen] = true;
-					temp_pMI[chosen] = 0;
+				int state = mi; // the current state
+				for(int i = nLoci; i > 0; i--){
+					if(state == 0) break;
+					// so, need probabilities of MI at this locus
+					// the probability you were in (state - 1), then observed an MI
+					probs_MI_NoMI[0] = 0;
+					if(state > 0) probs_MI_NoMI[0] = all_pTotalMI[i-1][state - 1] * pMI[i-1];
+					// probability you were previously in state, then did not observe an MI
+					probs_MI_NoMI[1] = all_pTotalMI[i-1][state] * (1 - pMI[i-1]);
+					
+					if(sampleC(select_MI, probs_MI_NoMI, rg) == 1){
+						lociWithMI[i-1] = true;
+						state--;
+					}
 				}
 
 				// now choose genotypes
@@ -316,6 +357,27 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 					// add missing genotypes as appropriate
 					if(randMissing[i](rg)) p1Genos[i] = -9;
 					if(randMissing[i](rg)) dGenos[i] = -9;
+				}
+				
+				// filter by number of obsereved MI (with missing data), if desired
+				if(MIexcludeProb > 0){
+					int countMI = 0;
+					bool skip = false;
+					for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ // for each locus
+						int p1Geno = p1Genos[j];
+						int dGeno = dGenos[j];
+						if(p1Geno == -9 || dGeno == -9) continue; // skip if any missing
+						if(noAllelesInCommonSP(
+								genotypeKeyC[j][p1Geno], // p1 genotype as vector of alleles
+	                      genotypeKeyC[j][dGeno] // o genotype as vector of alleles
+						)
+						) countMI++;
+						if (countMI > miLimit){
+							skip = true;
+							break;
+						}
+					}
+					if(skip) continue;
 				}
 
 				// calc LLR
@@ -373,7 +435,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 				col_llr.push_back(llrToTestC[i]);
 				col_mi.push_back(j);
 				col_p.push_back(pTotalMI[j]);
-				if(itersPerMIC[j] == 0){
+				if(itersPerMIC[j] == 0 || pTotalMI[j] == 0){
 					col_fp.push_back(0);
 					col_fpSD.push_back(0);
 				} else {
