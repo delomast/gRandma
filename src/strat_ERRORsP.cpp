@@ -3,6 +3,7 @@
 #include <math.h>
 #include <random>
 #include <string>
+#include <limits>
 #include "misc_math.h"
 #include "utils.h"
 #include "mend_incompat.h"
@@ -435,7 +436,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 				col_llr.push_back(llrToTestC[i]);
 				col_mi.push_back(j);
 				col_p.push_back(pTotalMI[j]);
-				if(itersPerMIC[j] == 0 || pTotalMI[j] == 0){
+				if(itersPerMIC[j] == 0 || pTotalMI[j] <= numeric_limits<double>::min()){
 					col_fp.push_back(0);
 					col_fpSD.push_back(0);
 				} else {

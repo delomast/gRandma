@@ -69,6 +69,8 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 	// end conversion of types
 	////////////////////
 	
+	int nLoci = genotypeKeyC.size();
+	
 	// initiate results storage
 	vector <int> mixtureInd;
 	vector <int> GrandparentPop;
@@ -208,7 +210,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 				
 				int countMI = 0;
 				bool skip = false;
-				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ // for each locus
+				for(int j = 0; j < nLoci; j++){ // for each locus
 					int gp1Geno = baselineC[pairs[i][0]][j+2];
 					int gp2Geno = baselineC[pairs[i][1]][j+2];
 					int dGeno = mixtureC[m][j+1];
@@ -229,7 +231,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 				// passed the MI filter,so calculate the llr
 				double uLLH = 0.0; // log-likelihood unrelated
 				double gpLLH = 0.0; // log-likelihood grandparent pair
-				for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ //for each locus
+				for(int j = 0; j < nLoci; j++){ //for each locus
 					// observed genotypes
 					int obs_gp1 = baselineC[pairs[i][0]][j+2];
 					int obs_gp2 = baselineC[pairs[i][1]][j+2];

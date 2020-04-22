@@ -50,6 +50,30 @@ void calcProbMIperLocus(const vector <vector <vector <int> > >& genotypeKeyC,
 	
 }
 
+// at each locus, calculate the probability of observing an MI (grandparent) in a trio
+// the input for this is the probability (NOT log) of OBSERVED genotype combination
+void calcProbMIperLocus_obs(const vector <vector <vector <int> > >& genotypeKeyC,
+                        const vector <vector <vector <vector <double> > > >& lGenos_trio_obs,
+                        vector <double>& pMI){
+	for(int i = 0, max = genotypeKeyC.size(); i < max; i++){
+		// summing accross all possible obs and true, calculate
+		// P(obs, true, MI | true grandparents) = P(MI|o)P(o|t)P(t|true grandparents)
+		for(int gp1 = 0, max3 = genotypeKeyC[i].size(); gp1 < max3; gp1++){ // for all possible OBS genotypes
+			for(int gp2 = 0; gp2 < max3; gp2++){ 
+				for(int d = 0; d < max3; d++){ 
+					//check if observed MI
+					if(noAllelesInCommonGP(
+							genotypeKeyC[i][gp1], // gp1 genotype as vector of alleles
+                      genotypeKeyC[i][gp2], // gp2 genotype as vector of alleles
+                                     genotypeKeyC[i][d] // d genotype as vector of alleles
+					)
+					) pMI[i] += lGenos_trio_obs[i][gp1][gp2][d];
+				}
+			}
+		}
+	}
+}
+
 // calculate the probability of sum(MI) = x
 void calcProbSumMI(const vector <double>& pMI, vector <double>& pTotalMI){
 	pTotalMI[0] = 1; // start at 0

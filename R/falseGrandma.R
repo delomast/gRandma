@@ -20,7 +20,9 @@
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
 								 llrToTest, N = 10000, seed = NULL, itersPerMI = NULL, 
 								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous"),
-								 MIexcludeProb = .0001){
+								 MIexcludeProb = .0001, maxMissingGenos = round(0.1 * (length(itersPerMI) - 1), 0),
+								 method = c("strat", "IS")){
+	method <- match.arg(method)
 	rel <- match.arg(relationship)
 	tRel <- match.arg(errorType)
 	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
@@ -90,11 +92,25 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 							gmaData$missingParams, gmaData$genotypeKey,
 							 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
 		} else {
-			errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-								gmaData$missingParams, gmaData$genotypeKey,
-                     gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+			if(method == "IS"){
+				errResults <- list(ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+												gmaData$missingParams, gmaData$genotypeKey,
+												gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+					)
+			} else {
+				# method is strat
+				if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
+				if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")
+				if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
+				if(any(itersPerMI < 0)) stop("some itersPerMI are negative.")
+				
+				errResults <- strat_ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+														gmaData$missingParams, gmaData$genotypeKey,
+														gmaData$genotypeErrorRates, llrToTest,
+														itersPerMI,
+														round(seed), c(0,1)[1], MIexcludeProb, maxMissingGenos)
+			}
 		}
-		
 		
 	} else if(rel == "sP"){
 		if(tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous", "pairwise")){

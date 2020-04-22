@@ -40,34 +40,48 @@ falseGrandma(gmaInputSawt, relationship = c("sP"),
 				 itersPerMI = c(rep(2000, 15), rep(0, 238 - 15)), 
 				 errorType = c("Aunt"))[[1]]
 
-
-
-
 temp <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
 				 llrToTest = c(1,5,10,15,20), seed = 7, 
 				 itersPerMI = c(rep(20, 15), rep(0, 238 - 15)), 
 				 errorType = c("Unrel"))
 
-falseGrandma(gmaInputBoth, relationship = c("sP"), 
+temp <- falseGrandma(gmaInputBoth, relationship = c("sP"), 
 				 llrToTest = c(1,5,10,15,20), seed = 7, 
 				 itersPerMI = rep(20, 238), 
 				 errorType = c("pairwise"))
 
-
-
-
-
-
-
 assign <- inferGrandma(gmaInputSawt, relationship = c("sP"), crossRecords = NULL, minLLR = 0,
 								 filterLLR = TRUE, MIexcludeProb = .0001)
 
+
 gmaInputSawt$baseline[1:200,2]
 crossRec <- data.frame("OtsSAWT14S", gmaInputSawt$baseline[1:100,2], gmaInputSawt$baseline[101:200,2])
-assignGP2 <- inferGrandma(gmaInputSawt, relationship = c("ssGP"), crossRecords = crossRec, minLLR = 0,
+assignGP <- inferGrandma(gmaInputSawt, relationship = c("ssGP"), crossRecords = crossRec, minLLR = 0,
 								 filterLLR = TRUE, MIexcludeProb = .0001)
-identical(assignGP, assignGP2)
-all.equal(assignGP, assignGP2)
 head(assignGP)
-head(assignGP2)
+
+fpStrat <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
+								llrToTest = c(1,5,10,15,20), seed = 7, 
+								itersPerMI = c(rep(20, 15), rep(0, 238 - 15)), 
+								errorType = c("Unrel"))
+colnames(filterSawt$baseline)[1:10]
+gmaInputSawtSmall <- createGmaInput(baseline = filterSawt$baseline[,1:102],
+										 unsampledPops = NULL, perAlleleError = .005,
+										 dropoutProb = .005)
+fpStrat2 <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"), 
+								llrToTest = c(0), seed = 7, 
+								itersPerMI = rep(20, 51), 
+								errorType = c("Unrel"), maxMissingGenos = 2)
+
+fpStrat_gp <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"), 
+								 llrToTest = c(1), seed = 7, 
+								 itersPerMI = c(rep(500, 3), rep(0, 51 -3)), 
+								 errorType = c("Unrel"))
+fpIS_gp <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"), 
+								 llrToTest = c(1), seed = 7, N = 2000,
+								 itersPerMI = c(rep(1000, 2), rep(0, 51 -2)), 
+								 errorType = c("Unrel"), method = "IS")
+
+fpStrat_gp[[1]]
+fpStrat_gp[[2]]
 

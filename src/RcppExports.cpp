@@ -5,24 +5,6 @@
 
 using namespace Rcpp;
 
-// ERRORsP
-Rcpp::DataFrame ERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed);
-RcppExport SEXP _gRandma_ERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type missingParams(missingParamsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
-    Rcpp::traits::input_parameter< int >::type N(NSEXP);
-    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    rcpp_result_gen = Rcpp::wrap(ERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed));
-    return rcpp_result_gen;
-END_RCPP
-}
 // ERRORssGP
 Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed);
 RcppExport SEXP _gRandma_ERRORssGP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP) {
@@ -57,25 +39,6 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< double >::type MIexcludeProb(MIexcludeProbSEXP);
     rcpp_result_gen = Rcpp::wrap(falseNeg_ERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb));
-    return rcpp_result_gen;
-END_RCPP
-}
-// otherPopERRORsP
-Rcpp::DataFrame otherPopERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, int N, int seed, Rcpp::NumericVector skipBaseline);
-RcppExport SEXP _gRandma_otherPopERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP NSEXP, SEXP seedSEXP, SEXP skipBaselineSEXP) {
-BEGIN_RCPP
-    Rcpp::RObject rcpp_result_gen;
-    Rcpp::RNGScope rcpp_rngScope_gen;
-    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type missingParams(missingParamsSEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
-    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
-    Rcpp::traits::input_parameter< int >::type N(NSEXP);
-    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
-    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type skipBaseline(skipBaselineSEXP);
-    rcpp_result_gen = Rcpp::wrap(otherPopERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, skipBaseline));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -157,6 +120,27 @@ BEGIN_RCPP
     return rcpp_result_gen;
 END_RCPP
 }
+// strat_ERRORssGP
+Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, Rcpp::NumericVector itersPerMI, int seed, int trueRel, double MIexcludeProb, int maxMissingGenos);
+RcppExport SEXP _gRandma_strat_ERRORssGP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP itersPerMISEXP, SEXP seedSEXP, SEXP trueRelSEXP, SEXP MIexcludeProbSEXP, SEXP maxMissingGenosSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type missingParams(missingParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type itersPerMI(itersPerMISEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< int >::type trueRel(trueRelSEXP);
+    Rcpp::traits::input_parameter< double >::type MIexcludeProb(MIexcludeProbSEXP);
+    Rcpp::traits::input_parameter< int >::type maxMissingGenos(maxMissingGenosSEXP);
+    rcpp_result_gen = Rcpp::wrap(strat_ERRORssGP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb, maxMissingGenos));
+    return rcpp_result_gen;
+END_RCPP
+}
 // strat_otherPopERRORsP
 Rcpp::List strat_otherPopERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, Rcpp::NumericVector itersPerMI, int seed, Rcpp::NumericVector skipBaseline, double MIexcludeProb);
 RcppExport SEXP _gRandma_strat_otherPopERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP itersPerMISEXP, SEXP seedSEXP, SEXP skipBaselineSEXP, SEXP MIexcludeProbSEXP) {
@@ -179,14 +163,13 @@ END_RCPP
 }
 
 static const R_CallMethodDef CallEntries[] = {
-    {"_gRandma_ERRORsP", (DL_FUNC) &_gRandma_ERRORsP, 8},
     {"_gRandma_ERRORssGP", (DL_FUNC) &_gRandma_ERRORssGP, 8},
     {"_gRandma_falseNeg_ERRORsP", (DL_FUNC) &_gRandma_falseNeg_ERRORsP, 9},
-    {"_gRandma_otherPopERRORsP", (DL_FUNC) &_gRandma_otherPopERRORsP, 9},
     {"_gRandma_otherPopERRORssGP", (DL_FUNC) &_gRandma_otherPopERRORssGP, 9},
     {"_gRandma_sP", (DL_FUNC) &_gRandma_sP, 9},
     {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 10},
     {"_gRandma_strat_ERRORsP", (DL_FUNC) &_gRandma_strat_ERRORsP, 10},
+    {"_gRandma_strat_ERRORssGP", (DL_FUNC) &_gRandma_strat_ERRORssGP, 11},
     {"_gRandma_strat_otherPopERRORsP", (DL_FUNC) &_gRandma_strat_otherPopERRORsP, 10},
     {NULL, NULL, 0}
 };

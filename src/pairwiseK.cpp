@@ -11,6 +11,9 @@
 
 using namespace std;
 
+// this assumes that the p1 genotype (G1) is from baselineParamsC and
+//   the d genotype (G2) is from a cross of baselineParamsC and unsampledPopParamsC
+// can avoid this by just using the same params for both, to assume that both are from one pop 
 void pairwiseK_calc2(const vector <vector <vector <int> > >& genotypeKeyC, 
 	                      const  vector <vector <double> >& lGenos_base, 
 	                      const vector <vector <vector <double> > >& baselineParamsC,
@@ -50,16 +53,16 @@ void pairwiseK_calc2(const vector <vector <vector <int> > >& genotypeKeyC,
 				
 				double p_G2_a1ibd = 0;
 				if(genotypeKeyC[i][p1][0] == genotypeKeyC[i][d][0]){
-					p_G2_a1ibd += exp(logMultPMF(k2, unsampledPopParamsC[pop][i]));
+					p_G2_a1ibd = exp(logMultPMF(k2, unsampledPopParamsC[pop][i]));
 				} else if (genotypeKeyC[i][p1][0] == genotypeKeyC[i][d][1]){
-					p_G2_a1ibd += exp(logMultPMF(k, unsampledPopParamsC[pop][i]));
+					p_G2_a1ibd = exp(logMultPMF(k, unsampledPopParamsC[pop][i]));
 				}
 
 				double p_G2_a2ibd = 0;
 				if(genotypeKeyC[i][p1][1] == genotypeKeyC[i][d][0]){
-					p_G2_a1ibd += exp(logMultPMF(k2, unsampledPopParamsC[pop][i]));
+					p_G2_a2ibd = exp(logMultPMF(k2, unsampledPopParamsC[pop][i]));
 				} else if (genotypeKeyC[i][p1][1] == genotypeKeyC[i][d][1]){
-					p_G2_a1ibd += exp(logMultPMF(k, unsampledPopParamsC[pop][i]));
+					p_G2_a2ibd = exp(logMultPMF(k, unsampledPopParamsC[pop][i]));
 				}
 				
 				double p_G2_0ibd;
