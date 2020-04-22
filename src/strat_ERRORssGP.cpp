@@ -71,21 +71,12 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 	// end conversion of types
 	////////////////////
 	
-	if(itersPerMIC.size() != (genotypeKeyC.size() + 1)) Rcpp::stop("Error: the length of itersPerMI is not equal to the number of loci + 1.");
 	int nLoci = genotypeKeyC.size();
 	if(maxMissingGenos > nLoci) Rcpp::stop("maxMissingGenos cannot be greater than the number of loci.");
 	
 	// initiate random number generator
 	mt19937 rg (seed);
 
-	// random number generators for missing genotypes for each locus
-	// simple Bernoulli
-	vector <bernoulli_distribution> randMissing;
-	for(int i = 0; i < nLoci; i++){ 
-		bernoulli_distribution tempDist (missingParamsC[i][0] / (missingParamsC[i][0] + missingParamsC[i][1]));
-		randMissing.push_back(tempDist);
-	}
-	
 	vector <int> popResults;
 	vector <double> llrRecord;
 	vector <double> falsePosAll;
@@ -195,6 +186,11 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 				" is: "<<miLimit<<". The probability of exclusion for a true grandparent pair (given no missing genotypes) is estimated as: "<<
 					1 - runningSum<<".\n";
 		}
+		
+		if(static_cast<int>(itersPerMIC.size()) < (miLimit + 1)) Rcpp::stop("Error: the length of itersPerMI is not long enough for the number of allowed MIs in this population.");
+		
+		if((miLimit + 1) * pow(maxMissingGenos + 1, 3) * nLoci > 345000000) Rcpp::warning("Using a large amount of memory...");
+		
 
 		/*
 		 * calculate probabilities of Observed trio genotypes given specified true relationships
@@ -210,61 +206,63 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 		
 		// have probabilities of true gp gp gc trio: lGenos_ssGP
 		// calc probabilities of poten gp and true gp
-		vector <vector <vector <double> > > lGenos_tRel_gp1;
-		pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, baselineParamsC, pop,
-                  k_prob_1, lGenos_tRel_gp1);
-		
-		vector <vector <vector <double> > > lGenos_tRel_gp2;
-		pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, baselineParamsC, pop,
-                  k_prob_2, lGenos_tRel_gp2);
-		
-		for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ // for each locus
-			// then calc probabilities of all potential trio genotypes
-			// initialize with 0's
-			vector <vector <vector <double> > > tempLoc_true_probs (genotypeKeyC[i].size(), 
-                               vector <vector <double> > (genotypeKeyC[i].size(), 
-                               vector <double> (genotypeKeyC[i].size(), 0)));
-
-			for(int gp1 = 0, mg = genotypeKeyC[i].size(); gp1 < mg; gp1++){
-				for(int gp2 = 0; gp2 < mg; gp2++){ // b/c true relationships may be different, have to calc all combos
-					for(int d = 0; d < mg; d++){
-						// P(d)*P(gp1|d)*P(gp2|d)
-						// P(d|gp1, gp2)
-						// for all possible true grandparent genotypes
-						for(int tgp1 = 0; tgp1 < mg; tgp1++){
-							for(int tgp2 = 0; tgp2 < mg; tgp2++){
-								// prob of d and true gp genos given poten gp genos 
-								tempLoc_true_probs[gp1][gp2][d] += exp(log(lGenos_ssGP[i][tgp1][tgp2][d]) + 
-									log(lGenos_tRel_gp1[i][gp1][tgp1]) +
-									log(lGenos_tRel_gp2[i][gp2][tgp2]) - lGenos_base[i][tgp1] - lGenos_base[i][tgp2]);
+	{
+			vector <vector <vector <double> > > lGenos_tRel_gp1;
+			pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, baselineParamsC, pop,
+	                  k_prob_1, lGenos_tRel_gp1);
+			
+			vector <vector <vector <double> > > lGenos_tRel_gp2;
+			pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, baselineParamsC, pop,
+	                  k_prob_2, lGenos_tRel_gp2);
+			
+			for(int i = 0, max = genotypeKeyC.size(); i < max; i++){ // for each locus
+				// then calc probabilities of all potential trio genotypes
+				// initialize with 0's
+				vector <vector <vector <double> > > tempLoc_true_probs (genotypeKeyC[i].size(), 
+	                               vector <vector <double> > (genotypeKeyC[i].size(), 
+	                               vector <double> (genotypeKeyC[i].size(), 0)));
+	
+				for(int gp1 = 0, mg = genotypeKeyC[i].size(); gp1 < mg; gp1++){
+					for(int gp2 = 0; gp2 < mg; gp2++){ // b/c true relationships may be different, have to calc all combos
+						for(int d = 0; d < mg; d++){
+							// P(d)*P(gp1|d)*P(gp2|d)
+							// P(d|gp1, gp2)
+							// for all possible true grandparent genotypes
+							for(int tgp1 = 0; tgp1 < mg; tgp1++){
+								for(int tgp2 = 0; tgp2 < mg; tgp2++){
+									// prob of d and true gp genos given poten gp genos 
+									tempLoc_true_probs[gp1][gp2][d] += exp(log(lGenos_ssGP[i][tgp1][tgp2][d]) + 
+										log(lGenos_tRel_gp1[i][gp1][tgp1]) +
+										log(lGenos_tRel_gp2[i][gp2][tgp2]) - lGenos_base[i][tgp1] - lGenos_base[i][tgp2]);
+								}
 							}
 						}
 					}
 				}
-			}
-			
-			// then for each OBS genotype, calc probability given probs of true genotypes and err rates
-			// initialize with 0's
-			prob_trio_genos_OBS.push_back(vector <vector <vector <double> > > (genotypeKeyC[i].size(),
-                                       		vector <vector <double> > (genotypeKeyC[i].size(),
-                                                	vector <double> (genotypeKeyC[i].size(), 0))));
-			for(int gp1 = 0, mg = genotypeKeyC[i].size(); gp1 < mg; gp1++){
-				for(int gp2 = 0; gp2 < mg; gp2++){ // b/c true relationships may be different, have to calc all combos
-					for(int d = 0; d < mg; d++){
-						// for each possible true genotype
-						for(int tgp1 = 0; tgp1 < mg; tgp1++){
-							for(int tgp2 = 0; tgp2 < mg; tgp2++){ // b/c true relationships may be different, have to calc all combos
-								for(int td = 0; td < mg; td++){
-									prob_trio_genos_OBS[i][gp1][gp2][d] += tempLoc_true_probs[tgp1][tgp2][td] * 
-										genotypeErrorRatesC[i][tgp1][gp1] * genotypeErrorRatesC[i][tgp2][gp2] * 
-										genotypeErrorRatesC[i][td][d];
+				
+				// then for each OBS genotype, calc probability given probs of true genotypes and err rates
+				// initialize with 0's
+				prob_trio_genos_OBS.push_back(vector <vector <vector <double> > > (genotypeKeyC[i].size(),
+	                                       		vector <vector <double> > (genotypeKeyC[i].size(),
+	                                                	vector <double> (genotypeKeyC[i].size(), 0))));
+				for(int gp1 = 0, mg = genotypeKeyC[i].size(); gp1 < mg; gp1++){
+					for(int gp2 = 0; gp2 < mg; gp2++){ // b/c true relationships may be different, have to calc all combos
+						for(int d = 0; d < mg; d++){
+							// for each possible true genotype
+							for(int tgp1 = 0; tgp1 < mg; tgp1++){
+								for(int tgp2 = 0; tgp2 < mg; tgp2++){ // b/c true relationships may be different, have to calc all combos
+									for(int td = 0; td < mg; td++){
+										prob_trio_genos_OBS[i][gp1][gp2][d] += tempLoc_true_probs[tgp1][tgp2][td] * 
+											genotypeErrorRatesC[i][tgp1][gp1] * genotypeErrorRatesC[i][tgp2][gp2] * 
+											genotypeErrorRatesC[i][td][d];
+									}
 								}
-							}
-						} // end for tgp1
+							} // end for tgp1
+						}
 					}
 				}
-			}
-		} // end for each locus
+			} // end for each locus
+		} // end scoping
 
 		/*
 		 * rearranging prob_trio_genos_OBS to be easier to use for sampling trio genotypes
@@ -335,81 +333,98 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 		vector <double> pMI_noMiss (nLoci, 0);
 		calcProbMIperLocus_obs(genotypeKeyC, prob_trio_genos_OBS, pMI_noMiss);
 		
-		// probabilities of being in each state
-		// indices are: #MI, #miss poten gp1, #miss poten gp2, #miss d
-		vector <vector <vector <vector <double> > > > states (nLoci + 1, 
-              vector <vector <vector <double> > > (nLoci + 1,
-                   	vector <vector <double> > (nLoci + 1,
-                             vector <double> (nLoci + 1, 0)
+		// save the states vector for each step
+		vector <vector <vector <vector <vector <double> > > > > all_states;
+		{ // limit scope of large variables
+			// probabilities of being in each state
+			// indices are: #MI, #miss poten gp1, #miss poten gp2, #miss d
+			vector <vector <vector <vector <double> > > > states (miLimit + 1, 
+	              vector <vector <vector <double> > > (maxMissingGenos + 1,
+	                   	vector <vector <double> > (maxMissingGenos + 1,
+	                             vector <double> (maxMissingGenos + 1, 0)
+					)
 				)
-			)
-		);
-		vector <vector <vector <vector <double> > > > zeroStates (states); // save empty copy for use below
-		vector <vector <vector <vector <vector <double> > > > > all_states; // save the states vector for each step
-		states[0][0][0][0] = 1; // start in state 0 for all
-		all_states.push_back(states);
-		for(int i = 0; i < nLoci; i++){ // for each locus
-			vector <vector <vector <vector <double> > > > tempStates (zeroStates);
-			// for each state possible to be in
-			for(int mi = 0; mi < i + 1; mi++){ // #mi
-				for(int jgp1 = 0; jgp1 < i + 1; jgp1++){ // #miss gp1
-					for(int jgp2 = 0; jgp2 < i + 1; jgp2++){ // #miss gp2
-						for(int jd = 0; jd < i + 1; jd++){ // #miss d
-							// stay in that state
-							// P(you were there) * P(didn't move)
-							// P(didn't move) = no missing genos * no MI | no missing genos
-							tempStates[mi][jgp1][jgp2][jd] += states[mi][jgp1][jgp2][jd] * 
-								pow(1 - prob_missing_geno[i], 3) * (1 - pMI_noMiss[i]);
-							// move to another state
-							// only make moves of + 1
-							// if move in any missing geno, can't move in MI
-							// add a MI
-							tempStates[mi + 1][jgp1][jgp2][jd] += states[mi][jgp1][jgp2][jd] * 
-								pow(1 - prob_missing_geno[i], 3) * pMI_noMiss[i];
-							// all options with missing genotypes
-							for(int m1 = 0; m1 < 2; m1++){ // m1-3: 0 is not missing, 1 is missing
-								for(int m2 = 0; m2 < 2; m2++){
-									for(int m3 = 0; m3 < 2; m3++){
-										if(m1 + m2 + m3 == 0) continue; // already handled no missing above
-										// probability you were there * probability you moved to new state
-										tempStates[mi][jgp1 + m1][jgp2 + m2][jd + m3] += states[mi][jgp1][jgp2][jd] *
-											pow(prob_missing_geno[i], m1 + m2 + m3) * 
-											pow(1 - prob_missing_geno[i], 3 - (m1 + m2 + m3));
+			);
+			vector <vector <vector <vector <double> > > > zeroStates (states); // save empty copy for use below
+	
+			states[0][0][0][0] = 1; // start in state 0 for all
+			all_states.push_back(states);
+			for(int i = 0; i < nLoci; i++){ // for each locus
+				vector <vector <vector <vector <double> > > > tempStates (zeroStates);
+				// for each state possible to be in
+				for(int mi = 0; mi < i + 1 && mi < miLimit + 1; mi++){ // #mi
+					for(int jgp1 = 0; jgp1 < i + 1 && jgp1 < maxMissingGenos + 1; jgp1++){ // #miss gp1
+						for(int jgp2 = 0; jgp2 < i + 1 && jgp2 < maxMissingGenos + 1; jgp2++){ // #miss gp2
+							for(int jd = 0; jd < i + 1 && jd < maxMissingGenos + 1; jd++){ // #miss d
+								// stay in that state
+								// P(you were there) * P(didn't move)
+								// P(didn't move) = no missing genos * no MI | no missing genos
+								tempStates[mi][jgp1][jgp2][jd] += states[mi][jgp1][jgp2][jd] * 
+									pow(1 - prob_missing_geno[i], 3) * (1 - pMI_noMiss[i]);
+								// move to another state
+								// only make moves of + 1
+								// if move in any missing geno, can't move in MI
+								// add a MI
+								if(mi + 1 <= miLimit) tempStates[mi + 1][jgp1][jgp2][jd] += states[mi][jgp1][jgp2][jd] * 
+									pow(1 - prob_missing_geno[i], 3) * pMI_noMiss[i];
+								// all options with missing genotypes
+								for(int m1 = 0; m1 < 2; m1++){ // m1-3: 0 is not missing, 1 is missing
+									for(int m2 = 0; m2 < 2; m2++){
+										for(int m3 = 0; m3 < 2; m3++){
+											if(m1 + m2 + m3 == 0) continue; // already handled no missing above
+											// probability you were there * probability you moved to new state
+											if(jgp1 + m1 <= maxMissingGenos && jgp2 + m2 <= maxMissingGenos && 
+              								jd + m3 <= maxMissingGenos) tempStates[mi][jgp1 + m1][jgp2 + m2][jd + m3] += 
+              								states[mi][jgp1][jgp2][jd] *
+												pow(prob_missing_geno[i], m1 + m2 + m3) * 
+												pow(1 - prob_missing_geno[i], 3 - (m1 + m2 + m3));
+										}
 									}
 								}
 							}
 						}
 					}
 				}
+				states = tempStates;
+				all_states.push_back(states);
 			}
-			states = tempStates;
-			all_states.push_back(states);
+		} // end scoping
+		
+		// probability of an individual having more than the allowed number of missing genotypes
+		double probFail = 1;
+		{
+			vector <double> probTotalFail (nLoci + 1, 0);
+			// can use this even though it's not MIs
+			calcProbSumMI(prob_missing_geno, probTotalFail);
+			for(int i = 0; i <= maxMissingGenos; i++) probFail -= probTotalFail[i];
 		}
+		// probability of one or more individuals having more than the allowed number of missing genotypes
+		double probAnyFail = 1 - pow(1 - probFail, 3); // just complement of all three succeeding
 
 		// calculate probability of being in each strata, given maximum number of missing genotypes per individual
-		vector <double> pNumMI_OBS (nLoci + 1, 0);
-		double condSum = 0;
-		for(int mi = 0; mi <= nLoci; mi++){ // #mi
+		vector <double> pNumMI_OBS (miLimit + 1, 0);
+		double validSum = 0; // this is probability of being in a valid state
+		for(int mi = 0; mi <= miLimit; mi++){ // #mi
 			for(int jgp1 = 0; jgp1 <= maxMissingGenos ; jgp1++){ // #miss gp1
 				for(int jgp2 = 0; jgp2 <= maxMissingGenos; jgp2++){ // #miss gp2
 					for(int jd = 0; jd <= maxMissingGenos; jd++){ // #miss d
-						pNumMI_OBS[mi] += states[mi][jgp1][jgp2][jd];
-						condSum += states[mi][jgp1][jgp2][jd];
+						pNumMI_OBS[mi] += all_states[nLoci][mi][jgp1][jgp2][jd];
+						validSum += all_states[nLoci][mi][jgp1][jgp2][jd];
 					}
 				}
 			}
 		}
-		// normalize
-		for(int mi = 0; mi <= nLoci; mi++) pNumMI_OBS[mi] /= condSum;
+		// probability of each strata, given that none have too many missing genotypes
+		for(int mi = 0; mi <= miLimit; mi++) pNumMI_OBS[mi] /= (1 - probAnyFail);
 
 		// some results storage for full results reporting
-		vector <vector <double> > falsePosPerStrata (itersPerMIC.size(), 
+		vector <vector <double> > falsePosPerStrata (miLimit + 1,
                     vector <double> (llrToTestC.size(), 0)); // indices: num of MI, llr threshold
 
 		// inititate results storage for this pop - one entry for each llr
 		vector <double> fp_SD_total (llrToTestC.size(), 0);
 
-		for(int mi = 0, maxMI = itersPerMIC.size(); mi < maxMI; mi++){
+		for(int mi = 0; mi <= miLimit; mi++){
 			Rcpp::checkUserInterrupt();
 			// check if prob of seeing this many MIs is zero
 			// if it's zero, throw a warning and skip this stratum
@@ -437,9 +452,9 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 						tempStateVec[2] = jgp2;
 						tempStateVec[3] = jd;
 						stateIndex.push_back(iState);
-						stateProb.push_back(states[mi][jgp1][jgp2][jd]);
+						stateProb.push_back(all_states[nLoci][mi][jgp1][jgp2][jd]);
 						statesToSample.push_back(tempStateVec);
-						tempSum += states[mi][jgp1][jgp2][jd];
+						tempSum += all_states[nLoci][mi][jgp1][jgp2][jd];
 						iState++;
 					}
 				}
@@ -539,31 +554,7 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 
 				// calc LLR
 				
-				/* filter pairs based on MI
-				 * for a pair of grandparents, number of MI is the number of loci for which the grandparent pair
-				 * and potential descendant share no alleles in common
-				 */
-				if(MIexcludeProb > 0){
-					int countMI = 0;
-					bool skip = false;
-					for(int j = 0, max2 = genotypeKeyC.size(); j < max2; j++){ // for each locus
-						int gp1Geno = gpaGenos[j];
-						int gp2Geno = gmaGenos[j];
-						int dGeno = dGenos[j];
-						if(gp1Geno == -9 || gp2Geno == -9 || dGeno == -9) continue; // skip if any missing
-						if(noAllelesInCommonGP(
-								genotypeKeyC[j][gp1Geno], // gp1 genotype as vector of alleles
-	                      genotypeKeyC[j][gp2Geno], // gp2 genotype as vector of alleles
-	                                     genotypeKeyC[j][dGeno] // o genotype as vector of alleles
-						)
-						) countMI++;
-						if (countMI > miLimit){
-							skip = true;
-							break;
-						}
-					}
-					if(skip) continue;
-				}
+				// no need to filter by MI b/c only simulating valid MI
 				
 				// passed the MI filter,so calculate the llr
 				double uLLH = 0.0; // log-likelihood unrelated

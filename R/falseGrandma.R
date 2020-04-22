@@ -20,7 +20,7 @@
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
 								 llrToTest, N = 10000, seed = NULL, itersPerMI = NULL, 
 								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous"),
-								 MIexcludeProb = .0001, maxMissingGenos = round(0.1 * (length(itersPerMI) - 1), 0),
+								 MIexcludeProb = .0001, maxMissingGenos = NULL,
 								 method = c("strat", "IS")){
 	method <- match.arg(method)
 	rel <- match.arg(relationship)
@@ -29,9 +29,11 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 												 	as.numeric(format(Sys.time(), "%j")) * 
 												 	as.numeric(format(Sys.time(), "%M")))
 	if(seed < 0) {
-		warning("seed must not be negative, setting seed to 0")
-		seed <- 0
+		warning("seed must not be negative, setting seed to 1")
+		seed <- 1
 	}
+	if(is.null(maxMissingGenos)) maxMissingGenos <- ceiling(.1 * length(gmaData$genotypeKey))
+	
 	useUnsamp <- FALSE
 	skipBaseline <- c() # so unsampled pops aren't tested as a baseline
 	if(!is.null(gmaData$unsampledPopsParams)){
