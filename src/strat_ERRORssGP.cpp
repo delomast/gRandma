@@ -264,9 +264,7 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 		}
 		
 		if(static_cast<int>(itersPerMIC.size()) < (miLimit + 1)) Rcpp::stop("Error: the length of itersPerMI is not long enough for the number of allowed MIs in this population.");
-		
 		if((miLimit + 1) * pow(maxMissingGenos + 1, 3) * nLoci > 345000000) Rcpp::Rcout << "\nUsing a large amount of memory...\n\n";
-		
 
 		/*
 		 * calculate probabilities of Observed trio genotypes given specified true relationships
@@ -276,13 +274,8 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 		 * Value is probability NOT log
 		 */
 		vector <vector <vector <vector <double> > > > prob_trio_genos_OBS;
-// 		createProbTrio_OBS(k_prob_1, k_prob_2, lGenos_ssGP, genotypeErrorRatesC, 
-//                      prob_trio_genos_OBS, ...);
-		// putting all calcs here first for testing
-		
-		// have probabilities of true gp gp gc trio: lGenos_ssGP
-		// calc probabilities of poten gp and true gp
-	{
+		// scoped to save memory but no need to make separate function
+		{
 			vector <vector <vector <double> > > lGenos_tRel_gp1;
 			pairwiseK_calc2(genotypeKeyC, lGenos_base, baselineParamsC, baselineParamsC, pop,
 	                  k_prob_1, lGenos_tRel_gp1);
@@ -302,7 +295,6 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 					for(int gp2 = 0; gp2 < mg; gp2++){ // b/c true relationships may be different, have to calc all combos
 						for(int d = 0; d < mg; d++){
 							// P(d)*P(gp1|d)*P(gp2|d)
-							// P(d|gp1, gp2)
 							// for all possible true grandparent genotypes
 							for(int tgp1 = 0; tgp1 < mg; tgp1++){
 								for(int tgp2 = 0; tgp2 < mg; tgp2++){
@@ -326,7 +318,7 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 						for(int d = 0; d < mg; d++){
 							// for each possible true genotype
 							for(int tgp1 = 0; tgp1 < mg; tgp1++){
-								for(int tgp2 = 0; tgp2 < mg; tgp2++){ // b/c true relationships may be different, have to calc all combos
+								for(int tgp2 = 0; tgp2 < mg; tgp2++){
 									for(int td = 0; td < mg; td++){
 										prob_trio_genos_OBS[i][gp1][gp2][d] += tempLoc_true_probs[tgp1][tgp2][td] * 
 											genotypeErrorRatesC[i][tgp1][gp1] * genotypeErrorRatesC[i][tgp2][gp2] * 
@@ -411,60 +403,7 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 		
 		// save the states vector for each step
 		vector <vector <vector <vector <vector <double> > > > > all_states;
-		{ // limit scope of large variables
-			// probabilities of being in each state
-			// indices are: #MI, #miss poten gp1, #miss poten gp2, #miss d
-			vector <vector <vector <vector <double> > > > states (miLimit + 1, 
-	              vector <vector <vector <double> > > (maxMissingGenos + 1,
-	                   	vector <vector <double> > (maxMissingGenos + 1,
-	                             vector <double> (maxMissingGenos + 1, 0)
-					)
-				)
-			);
-			vector <vector <vector <vector <double> > > > zeroStates (states); // save empty copy for use below
-	
-			states[0][0][0][0] = 1; // start in state 0 for all
-			all_states.push_back(states);
-			for(int i = 0; i < nLoci; i++){ // for each locus
-				vector <vector <vector <vector <double> > > > tempStates (zeroStates);
-				// for each state possible to be in
-				for(int mi = 0; mi < i + 1 && mi < miLimit + 1; mi++){ // #mi
-					for(int jgp1 = 0; jgp1 < i + 1 && jgp1 < maxMissingGenos + 1; jgp1++){ // #miss gp1
-						for(int jgp2 = 0; jgp2 < i + 1 && jgp2 < maxMissingGenos + 1; jgp2++){ // #miss gp2
-							for(int jd = 0; jd < i + 1 && jd < maxMissingGenos + 1; jd++){ // #miss d
-								// stay in that state
-								// P(you were there) * P(didn't move)
-								// P(didn't move) = no missing genos * no MI | no missing genos
-								tempStates[mi][jgp1][jgp2][jd] += states[mi][jgp1][jgp2][jd] * 
-									pow(1 - prob_missing_geno[i], 3) * (1 - pMI_noMiss[i]);
-								// move to another state
-								// only make moves of + 1
-								// if move in any missing geno, can't move in MI
-								// add a MI
-								if(mi + 1 <= miLimit) tempStates[mi + 1][jgp1][jgp2][jd] += states[mi][jgp1][jgp2][jd] * 
-									pow(1 - prob_missing_geno[i], 3) * pMI_noMiss[i];
-								// all options with missing genotypes
-								for(int m1 = 0; m1 < 2; m1++){ // m1-3: 0 is not missing, 1 is missing
-									for(int m2 = 0; m2 < 2; m2++){
-										for(int m3 = 0; m3 < 2; m3++){
-											if(m1 + m2 + m3 == 0) continue; // already handled no missing above
-											// probability you were there * probability you moved to new state
-											if(jgp1 + m1 <= maxMissingGenos && jgp2 + m2 <= maxMissingGenos && 
-              								jd + m3 <= maxMissingGenos) tempStates[mi][jgp1 + m1][jgp2 + m2][jd + m3] += 
-              								states[mi][jgp1][jgp2][jd] *
-												pow(prob_missing_geno[i], m1 + m2 + m3) * 
-												pow(1 - prob_missing_geno[i], 3 - (m1 + m2 + m3));
-										}
-									}
-								}
-							}
-						}
-					}
-				}
-				states = tempStates;
-				all_states.push_back(states);
-			}
-		} // end scoping
+		fwd_ssGP(miLimit, maxMissingGenos, nLoci, prob_missing_geno, pMI_noMiss, all_states);
 		
 		// probability of an individual having more than the allowed number of missing genotypes
 		double probFail = 1;

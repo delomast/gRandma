@@ -88,6 +88,12 @@ strat[[1]]
 plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
 abline(0,1)
 
+
+
+plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
+abline(0,1)
+
+
 for(r in c("Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", 
 			  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
 			  "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous")){
@@ -99,35 +105,19 @@ for(r in c("Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous",
 	)
 }
 
-falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
-							 llrToTest = c(1), seed = 7, 
-							 itersPerMI = rep(100, 10), 
-							 errorType = c("True_GAunt"))
-
-
-system.time(
-	stratS <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"), 
-								 llrToTest = seq(0,2,.1), seed = 7, 
-								 itersPerMI = rep(10000, 10), 
-								 errorType = c("Unrel"))
-)
-
-isS <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"), 
-						 llrToTest = seq(0,2,.1), seed = 7, 
-						 N = 6000, method = "IS", 
-						 errorType = c("Unrel"))
-plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
-abline(0,1)
-
-system.time(
-	stratFall <- falseGrandma(gmaInputFall, relationship = c("ssGP"), 
-								 llrToTest = seq(1,15,2), seed = 7, 
-								 itersPerMI = rep(10000, 10), 
-								 errorType = c("Unrel"))
-)
-
-strat_gAunt <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
+strat_postfunk <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
 							 llrToTest = seq(1,10,1), seed = 7, 
-							 itersPerMI = rep(100, 10), 
-							 errorType = c("True_GAunt"))
+							 itersPerMI = rep(1000, 10), 
+							 errorType = c("Unrel"))
 
+identical(strat_prefunk, strat_postfunk)
+
+pair_ssGP <- falseGrandma(gmaInputFall, relationship = c("ssGP"), 
+				 llrToTest = seq(1,10,1), seed = 7, 
+				 itersPerMI = rep(1000, 10), 
+				 errorType = c("pairwise"))
+debugonce(falseGrandma)
+falseGrandma(gmaInputFall, relationship = c("ssGP"), 
+				 llrToTest = seq(1,10,1), seed = 7, 
+				 itersPerMI = rep(10, 10), 
+				 errorType = c("pairwise"))

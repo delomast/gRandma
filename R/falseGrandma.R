@@ -104,10 +104,18 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 							 "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous")
 	
 	if(rel == "ssGP"){
+		if(tRel %in% c(ssGP_err_rels, "pairwise") && method == "strat"){
+			if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
+			if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")
+			if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
+			if(any(itersPerMI < 0)) stop("some itersPerMI are negative.")
+		}
 		if(tRel == "pairwise"){
-			errResults <- otherPopERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
-							gmaData$missingParams, gmaData$genotypeKey,
-							 gmaData$genotypeErrorRates, llrToTest, round(N), round(seed), skipBaseline)
+			errResults <- strat_otherPopERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+											gmaData$missingParams, gmaData$genotypeKey,
+											gmaData$genotypeErrorRates, llrToTest, itersPerMI,
+											round(seed), skipBaseline, MIexcludeProb,
+											maxMissingGenos)
 		} else {
 			if(method == "IS"){
 				errResults <- list(ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
@@ -125,11 +133,6 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 				
 			} else if (tRel %in% ssGP_err_rels) {
 				# method is strat, false positive of some sort
-				if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
-				if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")
-				if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
-				if(any(itersPerMI < 0)) stop("some itersPerMI are negative.")
-				
 				errResults <- strat_ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 														gmaData$missingParams, gmaData$genotypeKey,
 														gmaData$genotypeErrorRates, llrToTest,
@@ -142,7 +145,6 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 		}
 		
 	} else if(rel == "sP"){
-		if(method == "IS") stop("IS is not an option for sP")
 		if(tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous", "pairwise")){
 			if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
 			if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")

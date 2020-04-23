@@ -38,10 +38,10 @@ falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, 
 
 #' estimating false positive error rates for single-sided grandparent pair vs unrelated
 #' with individuls from one population being assigned to a different population
-#' Importance sampling Monte Carlo used for estimating false positive
+#' stratified Monte Carlo used for estimating false positive
+#' strata are number of observed mendelian incompatibilities in the trio
 #' 
 #' 
-#' This version uses trios from the current "baseline" pop as the importance sampling distribution
 #' 
 #' @param baselineParams Dirichlet parameters for allele frequencies
 #' @param unsampledPopParams Dirichlet parameters for allele frequencies
@@ -50,13 +50,16 @@ falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, 
 #' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
 #'   values are probability
 #' @param llrToTest Vector of llr's to test as threshold values
-#' @param N number of samples to take
+#' @param itersPerMI number of samples to take in each strata
+#' @param seed random number generation seed
 #' @param skipBaseline added unsampled pops to skip as baseline
+#' @param MIexcludeProb maximum prob to lead to GP exclusion
+#' @param maxMissingGenos maximum number of missing genotypes allowed in an individual
 #' @keywords internal
 #' @noRd
 #' @export
-otherPopERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, skipBaseline) {
-    .Call(`_gRandma_otherPopERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, skipBaseline)
+strat_otherPopERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb, maxMissingGenos) {
+    .Call(`_gRandma_strat_otherPopERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb, maxMissingGenos)
 }
 
 #' calculating llr of parent - offspring pair vs unrelated
