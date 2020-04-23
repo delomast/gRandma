@@ -89,17 +89,93 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 	vector <double> k_prob_1(3,0); // relationship of poten gp1 TO TRUE gp1
 	vector <double> k_prob_2(3,0); // relationship of poten gp2 TO TRUE gp2
 	string fpColName ("falsePos");
-	string fpSDColName ("falsePos");
+	string fpSDColName;
 	if(trueRel == 0){
 		// Unrelated and Unrelated
 		k_prob_1[0] = 1;
 		k_prob_2[0] = 1;
 		fpColName += "Unrel";
-		fpSDColName += "Unrel";
+	} else if (trueRel == 1) {
+		// True GP and great-aunt
+		k_prob_1[2] = 1;
+		k_prob_2[0] = 0.25; // full sibs
+		k_prob_2[1] = 0.5;
+		k_prob_2[2] = 0.25;
+		fpColName += "True_GAunt";
+	} else if (trueRel == 2) {
+		k_prob_1[2] = 1;
+		k_prob_2[0] = 1;
+		fpColName += "True_Unrel";
+	} else if (trueRel == 3) {
+		k_prob_1[2] = 1;
+		k_prob_2[0] = .5; // half-sibs
+		k_prob_2[1] = .5;
+		fpColName += "True_HGAunt";
+	} else if (trueRel == 4) {
+		k_prob_1[2] = 1;
+		k_prob_2[0] = .75; // cousin
+		k_prob_2[1] = .25;
+		fpColName += "True_GpCous";
+	} else if (trueRel == 5) {
+		k_prob_1[0] = 1;
+		k_prob_2[0] = 0.25; // full sibs
+		k_prob_2[1] = 0.5;
+		k_prob_2[2] = 0.25;
+		fpColName += "GAunt_Unrel";
+	} else if (trueRel == 6) {
+		k_prob_1[0] = 1;
+		k_prob_2[0] = .5; // half-sibs
+		k_prob_2[1] = .5;
+		fpColName += "HGAunt_Unrel";
+	} else if (trueRel == 7) {
+		k_prob_1[0] = 1;
+		k_prob_2[0] = .75; // cousin
+		k_prob_2[1] = .25;
+		fpColName += "GpCous_Unrel";
+	} else if (trueRel == 8) {
+		k_prob_1[0] = 0.25; // full sibs
+		k_prob_1[1] = 0.5;
+		k_prob_1[2] = 0.25;
+		k_prob_2[0] = 0.25; // full sibs
+		k_prob_2[1] = 0.5;
+		k_prob_2[2] = 0.25;
+		fpColName += "GAunt";
+	} else if (trueRel == 9) {
+		k_prob_1[0] = 0.25; // full sibs
+		k_prob_1[1] = 0.5;
+		k_prob_1[2] = 0.25;
+		k_prob_2[0] = .5; // half-sibs
+		k_prob_2[1] = .5;
+		fpColName += "GAunt_HGAunt";
+	} else if (trueRel == 10) {
+		k_prob_1[0] = 0.25; // full sibs
+		k_prob_1[1] = 0.5;
+		k_prob_1[2] = 0.25;
+		k_prob_2[0] = .75; // cousin
+		k_prob_2[1] = .25;
+		fpColName += "Gaunt_GpCous";
+	} else if (trueRel == 11) {
+		k_prob_1[0] = .5; // half-sibs
+		k_prob_1[1] = .5;
+		k_prob_2[0] = .5; // half-sibs
+		k_prob_2[1] = .5;
+		fpColName += "HGAunt";
+	} else if (trueRel == 12) {
+		k_prob_1[0] = .5; // half-sibs
+		k_prob_1[1] = .5;
+		k_prob_2[0] = .75; // cousin
+		k_prob_2[1] = .25;
+		fpColName += "HGAunt_GpCous";
+	} else if (trueRel == 13) {
+		k_prob_1[0] = .75; // cousin
+		k_prob_1[1] = .25;
+		k_prob_2[0] = .75; // cousin
+		k_prob_2[1] = .25;
+		fpColName += "GpCous";
 	} else {
 		Rcpp::stop("Internal error: trueRel not recognized");
 	}
-	fpSDColName += "SD";
+	fpSDColName = fpColName + "SD";
 	
 	// testing
 	if(k_prob_1[0] + k_prob_1[1] + k_prob_1[2] != 1) Rcpp::stop("Internal error k_prob_1.");
@@ -189,7 +265,7 @@ Rcpp::List strat_ERRORssGP(Rcpp::List baselineParams,
 		
 		if(static_cast<int>(itersPerMIC.size()) < (miLimit + 1)) Rcpp::stop("Error: the length of itersPerMI is not long enough for the number of allowed MIs in this population.");
 		
-		if((miLimit + 1) * pow(maxMissingGenos + 1, 3) * nLoci > 345000000) Rcpp::warning("Using a large amount of memory...");
+		if((miLimit + 1) * pow(maxMissingGenos + 1, 3) * nLoci > 345000000) Rcpp::Rcout << "\nUsing a large amount of memory...\n\n";
 		
 
 		/*

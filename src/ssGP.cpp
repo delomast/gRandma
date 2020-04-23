@@ -166,7 +166,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 					break;
 				}
 			}
-			// for(int i=0;i<10;i++) Rcpp::Rcout<<pTotalMI[i]<<"\n"; //testing
+
 			Rcpp::Rcout<<"The maximum number of Mendalian incompatibilities allowed"<<
 				" is: "<<miLimit<<". The probability of exclusion for a true grandparent pair (given no missing genotypes) is estimated as: "<<
 					1 - runningSum<<".\n";
@@ -206,6 +206,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 				/* filter pairs based on MI
 				 * for a pair of grandparents, number of MI is the number of loci for which the grandparent pair
 				 * and potential descendant share no alleles in common
+				 * need to count MI regardless for output
 				 */
 				
 				int countMI = 0;

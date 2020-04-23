@@ -83,9 +83,27 @@ is <- falseGrandma(gmaInputSawt, relationship = c("ssGP"),
 				 errorType = c("Unrel"))
 
 is
+
 strat[[1]]
 plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
 abline(0,1)
+
+for(r in c("Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", 
+			  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
+			  "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous")){
+	print(
+		falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
+						 llrToTest = c(1), seed = 7, 
+						 itersPerMI = rep(100, 10), 
+						 errorType = r)
+	)
+}
+
+falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
+							 llrToTest = c(1), seed = 7, 
+							 itersPerMI = rep(100, 10), 
+							 errorType = c("True_GAunt"))
+
 
 system.time(
 	stratS <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"), 
@@ -100,3 +118,16 @@ isS <- falseGrandma(gmaInputSawtSmall, relationship = c("ssGP"),
 						 errorType = c("Unrel"))
 plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
 abline(0,1)
+
+system.time(
+	stratFall <- falseGrandma(gmaInputFall, relationship = c("ssGP"), 
+								 llrToTest = seq(1,15,2), seed = 7, 
+								 itersPerMI = rep(10000, 10), 
+								 errorType = c("Unrel"))
+)
+
+strat_gAunt <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
+							 llrToTest = seq(1,10,1), seed = 7, 
+							 itersPerMI = rep(100, 10), 
+							 errorType = c("True_GAunt"))
+

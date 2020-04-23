@@ -15,8 +15,8 @@
 #' @keywords internal
 #' @noRd
 #' @export
-ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed) {
-    .Call(`_gRandma_ERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed)
+ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb, maxMissingGenos) {
+    .Call(`_gRandma_ERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb, maxMissingGenos)
 }
 
 #' estimatign error rates for parent - offspring pair vs unrelated

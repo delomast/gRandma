@@ -31,7 +31,8 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
                            Rcpp::List genotypeKey,
                            Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest,
                            int N,
-                           int seed
+                           int seed, double MIexcludeProb,
+                           int maxMissingGenos
 ){
 	//////////////////////
 	// first, turn all inputs into non-Rcpp c++ classes
@@ -67,14 +68,6 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 	
 	// initiate random number generator
 	mt19937 rg (seed);
-
-	// random number generators for missing genotypes for each locus
-	// simple Bernoulli
-	vector <bernoulli_distribution> randMissing;
-	for(int i = 0; i < nLoci; i++){ 
-		bernoulli_distribution tempDist (missingParamsC[i][0] / (missingParamsC[i][0] + missingParamsC[i][1]));
-		randMissing.push_back(tempDist);
-	}
 	
 	// since using true trio as importance sampling distribution, can calculate pos and neg at the same time
 	vector <int> popResults;
@@ -172,6 +165,57 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 			trioGenosLookup.push_back(tempGenos);
 		}
 		
+		// determine max number of MIs
+		int miLimit = genotypeKeyC.size();
+		if(MIexcludeProb > 0){
+			// first calculate the probability of MI at each locus | true grandparents
+			vector <double> pMI (genotypeKeyC.size(), 0.0); // p(MI|true grandparents) for each locus
+			calcProbMIperLocus(genotypeKeyC, genotypeErrorRatesC, lGenos_ssGP, pMI);
+			
+			// now calculate the probability of sum(MI) = x | true grandparents
+			vector <double> pTotalMI (genotypeKeyC.size() + 1, -9); // probability of having x observed MI | true grandparents
+			calcProbSumMI(pMI, pTotalMI);
+			
+			// now find miLimit such that P(sum(MI) > miLimit) < MIexcludeProb
+			double runningSum = 0.0;
+			for(int i = 0, max = pTotalMI.size(); i < max; i++){
+				runningSum += pTotalMI[i];
+				if(runningSum > (1 - MIexcludeProb)){
+					miLimit = i;
+					break;
+				}
+			}
+			Rcpp::Rcout<<"The maximum number of Mendalian incompatibilities allowed"<<
+				" is: "<<miLimit<<". The probability of exclusion for a true grandparent pair (given no missing genotypes) is estimated as: "<<
+					1 - runningSum<<".\n";
+		}
+		
+		// forward algorithm for missing genotypes
+		vector <double> prob_missing_geno (nLoci, 0); // probability that a genotype at locus i is missing
+		for(int i = 0; i < nLoci; i++) prob_missing_geno[i] = missingParamsC[i][0] / 
+			(missingParamsC[i][0] + missingParamsC[i][1]);
+		
+		vector <double> probTotalMiss (nLoci + 1, 0); // probability of ending the chain in each state
+		vector <vector <double> > probTotalMiss_all; // one entry for each step of the chain
+		calcProbSumMI_returnAll(prob_missing_geno, probTotalMiss, probTotalMiss_all);
+		
+		// set up vectors of states and relative probabilities for sampling
+		vector <int> numMissingState (maxMissingGenos + 1);
+		vector <double> numMissingProb (maxMissingGenos + 1);
+		double tSum = 0;
+		for(int i = 0; i <= maxMissingGenos; i++){
+			numMissingState[i] = i;
+			numMissingProb[i] = probTotalMiss[i];
+			tSum += probTotalMiss[i];
+		}
+		// normalize for kicks
+		for(int i = 0; i <= maxMissingGenos; i++) numMissingProb[i] /= tSum;
+		
+		// some vectors to use with sampleC in the backwards algorithm
+		vector <int> select_miss (2, 0);
+		select_miss[0] = 1;
+		vector <double> prob_miss_nomiss (2, 0);
+		
 		// inititate results storage for this pop - one entry for each llr
 		vector <double> falsePos (llrToTestC.size(), 0);
 		vector <double> falseNeg (llrToTestC.size(), 0);
@@ -188,13 +232,67 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 			vector <int> sampTrio (3, -1);
 			for(int i = 0; i < nLoci; i++){ // for each locus
 				// sample observed genotypes
-				sampTrio = trioGenosLookup[i][sampleC(combo[i], prob[i], rg)]; // sample a trio of observed genotypes
-
-				// add missing genotypes as appropriate
-				for(int j = 0; j < 3; j++) if(randMissing[i](rg)) sampTrio[j] = -9;
+				sampTrio = trioGenosLookup[i][sampleC(combo[i], prob[i], rg)];
 				gpaGenos[i] = sampTrio[0];
 				gmaGenos[i] = sampTrio[1];
 				dGenos[i] = sampTrio[2];
+			}
+			
+			// backwards algorithm to add missing genotypes
+			// choose state : number of missing genotypes
+			int state_gpa = sampleC(numMissingState, numMissingProb, rg);
+			int state_gma = sampleC(numMissingState, numMissingProb, rg);
+			int state_d = sampleC(numMissingState, numMissingProb, rg);
+			// choose missing genotypes
+			for(int i = nLoci; i > 0; i--){
+				if(state_gpa + state_gma + state_d == 0) break;
+				//gpa
+				prob_miss_nomiss[0] = 0;
+				if(state_gpa > 0) prob_miss_nomiss[0] = probTotalMiss_all[i-1][state_gpa - 1] * prob_missing_geno[i-1];
+				prob_miss_nomiss[1] = probTotalMiss_all[i-1][state_gpa] * (1 - prob_missing_geno[i-1]);
+				if(sampleC(select_miss, prob_miss_nomiss, rg) == 1){
+					gpaGenos[i-1] = -9;
+					state_gpa--;
+				}
+				//gma
+				prob_miss_nomiss[0] = 0;
+				if(state_gma > 0) prob_miss_nomiss[0] = probTotalMiss_all[i-1][state_gma - 1] * prob_missing_geno[i-1];
+				prob_miss_nomiss[1] = probTotalMiss_all[i-1][state_gma] * (1 - prob_missing_geno[i-1]);
+				if(sampleC(select_miss, prob_miss_nomiss, rg) == 1){
+					gmaGenos[i-1] = -9;
+					state_gma--;
+				}
+				//d
+				prob_miss_nomiss[0] = 0;
+				if(state_d > 0) prob_miss_nomiss[0] = probTotalMiss_all[i-1][state_d - 1] * prob_missing_geno[i-1];
+				prob_miss_nomiss[1] = probTotalMiss_all[i-1][state_d] * (1 - prob_missing_geno[i-1]);
+				if(sampleC(select_miss, prob_miss_nomiss, rg) == 1){
+					dGenos[i-1] = -9;
+					state_d--;
+				}
+			}
+			
+			// determine if have allowable number of MIs
+			if(MIexcludeProb > 0){
+				int countMI = 0;
+				bool skip = false;
+				for(int j = 0; j < nLoci; j++){ // for each locus
+					int gp1Geno = gpaGenos[j];
+					int gp2Geno = gmaGenos[j];
+					int dGeno = dGenos[j];
+					if(gp1Geno == -9 || gp2Geno == -9 || dGeno == -9) continue; // skip if any missing
+					if(noAllelesInCommonGP(
+							genotypeKeyC[j][gp1Geno], // gp1 genotype as vector of alleles
+	                     genotypeKeyC[j][gp2Geno], // gp2 genotype as vector of alleles
+	                                    genotypeKeyC[j][dGeno] // o genotype as vector of alleles
+					)
+					) countMI++;
+					if (countMI > miLimit){
+						skip = true;
+						break;
+					}
+				}
+				if(skip) continue;
 			}
 			
 			// calc LLR
@@ -206,8 +304,13 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 				int obs_gp2 = gmaGenos[j];
 				int obs_d = dGenos[j];
 
-				// if missing genotypes
-				if(obs_gp1 == -9 || obs_gp2 == -9 || obs_d == -9){
+				// if desc missing, no information about the relationship
+				if(obs_d == -9) continue;
+				
+				// if missing genotypes, information if only one missing OR if an unsampled pop
+				//   b/c allele freqs will be different whether its a descendant or not
+				if(obs_gp1 == -9 || obs_gp2 == -9){
+					// could make lookup tables for these
 					double u_likelihood = 0.0; // likelihoods for this locus (NOT log) b/c sum across all possible true genotypes
 					double gp_likelihood = 0.0;
 					double pOA_gp1, pOA_gp2, pOA_d; // prob of observed given actual
@@ -224,11 +327,7 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 								} else {
 									pOA_gp2 = genotypeErrorRatesC[j][gp2][obs_gp2];
 								}
-								if(obs_d == -9){
-									pOA_d = 1.0;
-								} else {
-									pOA_d = genotypeErrorRatesC[j][d][obs_d];
-								}
+								pOA_d = genotypeErrorRatesC[j][d][obs_d];
 								// unrelated
 								// P(gp1|baseline pop)P(gp2|baseline pop)P(d|unsampled pop)P(gp1|obs_gp1)P(gp2|obs_gp2)P(d|obs_d)
 								u_likelihood += exp(lGenos_base[j][gp1] + lGenos_base[j][gp2] + lGenos_unsamp[j][d]) * 
@@ -274,8 +373,8 @@ Rcpp::DataFrame ERRORssGP(Rcpp::List baselineParams,
 	// organize as a DataFrame and return	
 	Rcpp::DataFrame results = Rcpp::DataFrame::create(Rcpp::Named("Pop") = popResults,
                                                    Rcpp::Named("llrThreshold") = llrRecord,
-                                                   Rcpp::Named("falsePos") = falsePosAll,
-                                                   Rcpp::Named("falsePosSD") = SDfalsePosAll,
+                                                   Rcpp::Named("falsePosUnrel") = falsePosAll,
+                                                   Rcpp::Named("falsePosUnrelSD") = SDfalsePosAll,
                                                    Rcpp::Named("falseNeg") = falseNegAll,
                                                    Rcpp::Named("falseNegSD") = SDfalseNegAll
 																	);

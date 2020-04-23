@@ -12,8 +12,8 @@
 #'  1 identifier, column 3 is individual 2 identifier
 #' @param minLLR the minimum LLR to include in the results. Only used if \code{filterLLR} is \code{TRUE}.
 #' @param filterLLR \code{TRUE} to filter results based on minLLR, \code{FALSE} to not.
-#' @param MIexcludeProb the maximum probability of exclusion for a true grandparent pair due to 
-#'   Mendelian incompatibilities. If \code{0}, then no filtering of potential grandparent pairs is performed
+#' @param MIexcludeProb the maximum probability of exclusion for a true relationship due to 
+#'   Mendelian incompatibilities. If \code{0}, then no filtering is performed
 #'   based on Mendelian incompatibilities.
 #' @export
 inferGrandma <- function(gmaData, relationship = c("ssGP", "sP"), crossRecords = NULL, minLLR = 0,

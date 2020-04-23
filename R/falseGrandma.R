@@ -7,19 +7,28 @@
 #' @param gmaData the gmaData object containing your baseline populations and potential descendents. This 
 #'   input is created by \code{createGmaInput}
 #' @param relationship the relationship you want to test for: "ssGP" - single sided grandparentage 
-#'   (a pair of either two maternal grandparents OR two paternal grandparents)
-#' @param llrToTest a vector of llr thresholds to estimate false positive and false negative rates for
-#' @param N the number of Monte Carlo samples to take to estimate the error rates
+#'   (a pair of either two maternal grandparents OR two paternal grandparents); "sP" - single parent inference 
+#' @param llrToTest a vector of llr thresholds to estimate error rates for
+#' @param N the number of Monte Carlo samples to take to estimate the error rates (ignored for stratified methods)
 #' @param seed a positive integer to use as a seed for random number generation. If \code{NULL}, a seed is 
 #'   chosen based on the current system time 
-#' @param pairwise TRUE to estimate false positive rate for pairwise combinations of the baseline populations.
-#'   In otherwords, the rate at which mixture individuals from one population have llr's equal to or above 
-#'   the threshold when being tested against the baseline of another population.
+#' @param itersperMI the number of iterations per Mendelian incompatibility, in order of 0, 1, ... 
+#'   (ignored for non-stratified methods)
+#' @param errorType the type of error estimate to make
+#' @param MIexcludeProb the maximum probability of exclusion for a true relationship due to 
+#'   Mendelian incompatibilities. If \code{0}, then no filtering is performed
+#'   based on Mendelian incompatibilities.
+#' @param maxMissingGenos the maximum number of missing genotypes a sample can have before you would 
+#'   choose to omit it from analysis
+#' @param method strat for stratified, IS for importance sampling. Only used for ssGP.
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
 								 llrToTest, N = 10000, seed = NULL, itersPerMI = NULL, 
-								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous"),
+								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous",
+								 				  "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", 
+								 				  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
+								 				  "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous"),
 								 MIexcludeProb = .0001, maxMissingGenos = NULL,
 								 method = c("strat", "IS")){
 	method <- match.arg(method)
@@ -33,6 +42,8 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 		seed <- 1
 	}
 	if(is.null(maxMissingGenos)) maxMissingGenos <- ceiling(.1 * length(gmaData$genotypeKey))
+	if(maxMissingGenos %% 1 != 0) stop("maxMissingGenos must be an integer")
+	if(method == "IS" && (tRel != "Unrel" || rel != "ssGP")) stop("method of IS is only an option for ssGP and Unrel")
 	
 	useUnsamp <- FALSE
 	skipBaseline <- c() # so unsampled pops aren't tested as a baseline
@@ -88,6 +99,10 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	# change things to numeric matrices when pass them to c++
 	gmaData$genotypeKey <- lapply(gmaData$genotypeKey, as.matrix)
 	
+	ssGP_err_rels <- c("Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", 
+							 "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
+							 "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous")
+	
 	if(rel == "ssGP"){
 		if(tRel == "pairwise"){
 			errResults <- otherPopERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
@@ -97,10 +112,19 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 			if(method == "IS"){
 				errResults <- list(ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 												gmaData$missingParams, gmaData$genotypeKey,
-												gmaData$genotypeErrorRates, llrToTest, round(N), round(seed))
+												gmaData$genotypeErrorRates, llrToTest, round(N), round(seed),
+												MIexcludeProb, maxMissingGenos)
 					)
-			} else {
-				# method is strat
+			} else if (tRel == "falseNegative"){
+				# just running the IS function, doesn't really add significant comp time
+				errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+													  gmaData$missingParams, gmaData$genotypeKey,
+													  gmaData$genotypeErrorRates, llrToTest, round(N), round(seed),
+													  MIexcludeProb, maxMissingGenos)
+				errResults <- list(errResults[,c(1,2,5,6)])
+				
+			} else if (tRel %in% ssGP_err_rels) {
+				# method is strat, false positive of some sort
 				if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
 				if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")
 				if(any(itersPerMI == 1)) warning("some itersPerMI are 1, SD will be undefined.")
@@ -110,11 +134,15 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 														gmaData$missingParams, gmaData$genotypeKey,
 														gmaData$genotypeErrorRates, llrToTest,
 														itersPerMI,
-														round(seed), c(0,1)[1], MIexcludeProb, maxMissingGenos)
+														round(seed), c(0:length(ssGP_err_rels))[which(ssGP_err_rels == tRel)], 
+														MIexcludeProb, maxMissingGenos)
+			} else {
+				stop("relationship and error type combination not recognized")
 			}
 		}
 		
 	} else if(rel == "sP"){
+		if(method == "IS") stop("IS is not an option for sP")
 		if(tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous", "pairwise")){
 			if(is.null(itersPerMI)) stop("itersPerMI must be input for this option.")
 			if(any((itersPerMI %% 1) != 0)) stop("all itersPerMI must be integers")
@@ -154,14 +182,9 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	}
 	
 	# turn pop names back to strings
-	if(!is.data.frame(errResults)){
-		for(i in 1:length(errResults)){
-			if(tRel == "pairwise") errResults[[i]][,2] <- popKey[match(errResults[[i]][,2], popKey[,2]),1]
-			errResults[[i]][,1] <- popKey[match(errResults[[i]][,1], popKey[,2]),1]
-		}
-	} else {
-		if(tRel == "pairwise") errResults[,2] <- popKey[match(errResults[,2], popKey[,2]),1]
-		errResults[,1] <- popKey[match(errResults[,1], popKey[,2]),1]
+	for(i in 1:length(errResults)){
+		if(tRel == "pairwise") errResults[[i]][,2] <- popKey[match(errResults[[i]][,2], popKey[,2]),1]
+		errResults[[i]][,1] <- popKey[match(errResults[[i]][,1], popKey[,2]),1]
 	}
 	
 	return(errResults)
