@@ -21,6 +21,10 @@ void fwd_ssGP(const int miLimit, const int maxMissingGenos, const int nLoci,
               const std::vector <double>& prob_missing_geno, 
               const std::vector <double>& pMI_noMiss, 
               std::vector <std::vector <std::vector <std::vector <std::vector <double> > > > >& all_states);
+void fwd_sP(const int miLimit, const int maxMissingGenos, const int nLoci, 
+            const std::vector <double>& prob_missing_geno, 
+            const std::vector <double>& pMI_noMiss, 
+            std::vector <std::vector <std::vector <std::vector <double> > > >& all_states);
 void calcProbMIperLocus_sP(const std::vector <std::vector <std::vector <int> > >& genotypeKeyC,
                         const std::vector <std::vector < std::vector <double> > >& genotypeErrorRatesC,
                         const std::vector <std::vector <std::vector <double> > >& lGenos_sP,

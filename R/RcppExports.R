@@ -118,8 +118,27 @@ ssGP <- function(baseline, mixture, crossRecords, baselineParams, unsampledPopPa
 #' @keywords internal
 #' @noRd
 #' @export
-strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb) {
-    .Call(`_gRandma_strat_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb)
+strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb, maxMissingGenos) {
+    .Call(`_gRandma_strat_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb, maxMissingGenos)
+}
+
+#' estimating positive error rates for parent - offspring pairs
+#' stratified Monte Carlo used for estimating false positive
+#' @param baselineParams Dirichlet parameters for allele frequencies
+#' @param unsampledPopParams Dirichlet parameters for allele frequencies
+#' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
+#' @param llrToTest Vector of llr's to test as threshold values
+#' @param N number of samples to take
+#' @param trueRel an integer indicating the true relationship to simulate: 0 = unrelated, 1 = aunt,
+#'   2 = half aunt, 3 = cousin of parent
+#' @keywords internal
+#' @noRd
+#' @export
+old_strat_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb) {
+    .Call(`_gRandma_old_strat_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb)
 }
 
 #' estimatign error rates for single-sided grandparent pair vs unrelated

@@ -366,13 +366,11 @@ Rcpp::List strat_otherPopERRORssGP(Rcpp::List baselineParams,
 			
 			// calculate probability of being in each strata, given maximum number of missing genotypes per individual
 			vector <double> pNumMI_OBS (miLimit + 1, 0);
-			double validSum = 0; // this is probability of being in a valid state
 			for(int mi = 0; mi <= miLimit; mi++){ // #mi
 				for(int jgp1 = 0; jgp1 <= maxMissingGenos ; jgp1++){ // #miss gp1
 					for(int jgp2 = 0; jgp2 <= maxMissingGenos; jgp2++){ // #miss gp2
 						for(int jd = 0; jd <= maxMissingGenos; jd++){ // #miss d
 							pNumMI_OBS[mi] += all_states[nLoci][mi][jgp1][jgp2][jd];
-							validSum += all_states[nLoci][mi][jgp1][jgp2][jd];
 						}
 					}
 				}

@@ -105,8 +105,8 @@ BEGIN_RCPP
 END_RCPP
 }
 // strat_ERRORsP
-Rcpp::List strat_ERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, Rcpp::NumericVector itersPerMI, int seed, int trueRel, double MIexcludeProb);
-RcppExport SEXP _gRandma_strat_ERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP itersPerMISEXP, SEXP seedSEXP, SEXP trueRelSEXP, SEXP MIexcludeProbSEXP) {
+Rcpp::List strat_ERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, Rcpp::NumericVector itersPerMI, int seed, int trueRel, double MIexcludeProb, double maxMissingGenos);
+RcppExport SEXP _gRandma_strat_ERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP itersPerMISEXP, SEXP seedSEXP, SEXP trueRelSEXP, SEXP MIexcludeProbSEXP, SEXP maxMissingGenosSEXP) {
 BEGIN_RCPP
     Rcpp::RObject rcpp_result_gen;
     Rcpp::RNGScope rcpp_rngScope_gen;
@@ -120,7 +120,28 @@ BEGIN_RCPP
     Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
     Rcpp::traits::input_parameter< int >::type trueRel(trueRelSEXP);
     Rcpp::traits::input_parameter< double >::type MIexcludeProb(MIexcludeProbSEXP);
-    rcpp_result_gen = Rcpp::wrap(strat_ERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb));
+    Rcpp::traits::input_parameter< double >::type maxMissingGenos(maxMissingGenosSEXP);
+    rcpp_result_gen = Rcpp::wrap(strat_ERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb, maxMissingGenos));
+    return rcpp_result_gen;
+END_RCPP
+}
+// old_strat_ERRORsP
+Rcpp::List old_strat_ERRORsP(Rcpp::List baselineParams, Rcpp::List unsampledPopParams, Rcpp::List missingParams, Rcpp::List genotypeKey, Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest, Rcpp::NumericVector itersPerMI, int seed, int trueRel, double MIexcludeProb);
+RcppExport SEXP _gRandma_old_strat_ERRORsP(SEXP baselineParamsSEXP, SEXP unsampledPopParamsSEXP, SEXP missingParamsSEXP, SEXP genotypeKeySEXP, SEXP genotypeErrorRatesSEXP, SEXP llrToTestSEXP, SEXP itersPerMISEXP, SEXP seedSEXP, SEXP trueRelSEXP, SEXP MIexcludeProbSEXP) {
+BEGIN_RCPP
+    Rcpp::RObject rcpp_result_gen;
+    Rcpp::RNGScope rcpp_rngScope_gen;
+    Rcpp::traits::input_parameter< Rcpp::List >::type baselineParams(baselineParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type unsampledPopParams(unsampledPopParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type missingParams(missingParamsSEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeKey(genotypeKeySEXP);
+    Rcpp::traits::input_parameter< Rcpp::List >::type genotypeErrorRates(genotypeErrorRatesSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type llrToTest(llrToTestSEXP);
+    Rcpp::traits::input_parameter< Rcpp::NumericVector >::type itersPerMI(itersPerMISEXP);
+    Rcpp::traits::input_parameter< int >::type seed(seedSEXP);
+    Rcpp::traits::input_parameter< int >::type trueRel(trueRelSEXP);
+    Rcpp::traits::input_parameter< double >::type MIexcludeProb(MIexcludeProbSEXP);
+    rcpp_result_gen = Rcpp::wrap(old_strat_ERRORsP(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, trueRel, MIexcludeProb));
     return rcpp_result_gen;
 END_RCPP
 }
@@ -172,7 +193,8 @@ static const R_CallMethodDef CallEntries[] = {
     {"_gRandma_strat_otherPopERRORssGP", (DL_FUNC) &_gRandma_strat_otherPopERRORssGP, 11},
     {"_gRandma_sP", (DL_FUNC) &_gRandma_sP, 9},
     {"_gRandma_ssGP", (DL_FUNC) &_gRandma_ssGP, 10},
-    {"_gRandma_strat_ERRORsP", (DL_FUNC) &_gRandma_strat_ERRORsP, 10},
+    {"_gRandma_strat_ERRORsP", (DL_FUNC) &_gRandma_strat_ERRORsP, 11},
+    {"_gRandma_old_strat_ERRORsP", (DL_FUNC) &_gRandma_old_strat_ERRORsP, 10},
     {"_gRandma_strat_ERRORssGP", (DL_FUNC) &_gRandma_strat_ERRORssGP, 11},
     {"_gRandma_strat_otherPopERRORsP", (DL_FUNC) &_gRandma_strat_otherPopERRORsP, 10},
     {NULL, NULL, 0}

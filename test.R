@@ -21,7 +21,13 @@ fN
 fPunrel <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
 								 llrToTest = c(1,5,10,15,20), seed = 7, 
 						 itersPerMI = c(rep(2000, 15), rep(0, 238 - 15)), 
-								 errorType = c("Unrel"))
+								 errorType = c("Aunt"), method = "old")
+system.time(
+fPunrel2 <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
+								llrToTest = c(1,5,10,15,20), seed = 7, 
+								itersPerMI = rep(10000, 15), 
+								errorType = c("Aunt"))
+)
 fPunrel[[1]]
 fPunrel2[[1]]
 fPunrel[[2]][1:10,]
@@ -116,8 +122,6 @@ pair_ssGP <- falseGrandma(gmaInputFall, relationship = c("ssGP"),
 				 llrToTest = seq(1,10,1), seed = 7, 
 				 itersPerMI = rep(1000, 10), 
 				 errorType = c("pairwise"))
-debugonce(falseGrandma)
-falseGrandma(gmaInputFall, relationship = c("ssGP"), 
-				 llrToTest = seq(1,10,1), seed = 7, 
-				 itersPerMI = rep(10, 10), 
-				 errorType = c("pairwise"))
+
+pair_ssGP[[1]]
+pair_ssGP[[2]]

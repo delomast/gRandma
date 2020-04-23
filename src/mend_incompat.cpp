@@ -175,6 +175,61 @@ void fwd_ssGP(const int miLimit, const int maxMissingGenos, const int nLoci,
 //////////////////////
 //////////////////////
 
+// forward algorithm for ssGP joint number of MI and num missing genos for all three
+void fwd_sP(const int miLimit, const int maxMissingGenos, const int nLoci, 
+              const vector <double>& prob_missing_geno, 
+              const vector <double>& pMI_noMiss, 
+              vector <vector <vector <vector <double> > > >& all_states){
+	// probabilities of being in each state
+	// indices are: #MI, #miss poten p1, #miss d
+	vector <vector <vector <double> > > states (miLimit + 1, 
+           vector <vector <double> > (maxMissingGenos + 1,
+                   vector <double> (maxMissingGenos + 1, 0)
+                   )
+           );
+
+	vector <vector <vector <double> > > zeroStates (states); // save empty copy for use below
+	
+	states[0][0][0] = 1; // start in state 0 for all
+	all_states.push_back(states);
+	for(int i = 0; i < nLoci; i++){ // for each locus
+		vector <vector <vector <double> > > tempStates (zeroStates);
+		// for each state possible to be in
+		for(int mi = 0; mi < i + 1 && mi < miLimit + 1; mi++){ // #mi
+			for(int p1 = 0; p1 < i + 1 && p1 < maxMissingGenos + 1; p1++){ // #miss p1
+				Rcpp::checkUserInterrupt();
+				for(int jd = 0; jd < i + 1 && jd < maxMissingGenos + 1; jd++){ // #miss d
+					// stay in that state
+					// P(you were there) * P(didn't move)
+					// P(didn't move) = no missing genos * no MI | no missing genos
+					tempStates[mi][p1][jd] += states[mi][p1][jd] * 
+						pow(1 - prob_missing_geno[i], 2) * (1 - pMI_noMiss[i]);
+					// move to another state
+					// only make moves of + 1
+					// if move in any missing geno, can't move in MI
+					// add a MI
+					if(mi + 1 <= miLimit) tempStates[mi + 1][p1][jd] += states[mi][p1][jd] * 
+						pow(1 - prob_missing_geno[i], 2) * pMI_noMiss[i];
+					// all options with missing genotypes
+					for(int m1 = 0; m1 < 2; m1++){ // m1-3: 0 is not missing, 1 is missing
+						for(int m3 = 0; m3 < 2; m3++){
+							if(m1 + m3 == 0) continue; // already handled no missing above
+							// probability you were there * probability you moved to new state
+							if(p1 + m1 <= maxMissingGenos && jd + m3 <= 
+          					maxMissingGenos) tempStates[mi][p1 + m1][jd + m3] += 
+							      states[mi][p1][jd] *
+							      pow(prob_missing_geno[i], m1 + m3) * 
+							      pow(1 - prob_missing_geno[i], 2 - (m1 + m3));
+						}
+					}
+				}
+			}
+		}
+		states = tempStates;
+		all_states.push_back(states);
+	}
+}
+
 // at each locus, calculate the probability of a MI | true parent
 void calcProbMIperLocus_sP(const vector <vector <vector <int> > >& genotypeKeyC,
                         const vector< vector < vector <double> > >& genotypeErrorRatesC,

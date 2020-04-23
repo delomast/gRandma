@@ -30,7 +30,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 								 				  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
 								 				  "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous"),
 								 MIexcludeProb = .0001, maxMissingGenos = NULL,
-								 method = c("strat", "IS")){
+								 method = c("strat", "IS", "old")){
 	method <- match.arg(method)
 	rel <- match.arg(relationship)
 	tRel <- match.arg(errorType)
@@ -168,13 +168,25 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 				)
 
 		} else if (tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous")) {
-			errResults <- strat_ERRORsP(gmaData$baselineParams,
+			
+			if(method == "old"){
+				# for testing
+				errResults <- old_strat_ERRORsP(gmaData$baselineParams,
+													 gmaData$unsampledPopsParams, gmaData$missingParams,
+													 gmaData$genotypeKey,
+													 gmaData$genotypeErrorRates, llrToTest,
+													 itersPerMI,
+													 round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)],
+													 MIexcludeProb)
+			} else {
+				errResults <- strat_ERRORsP(gmaData$baselineParams,
 									gmaData$unsampledPopsParams, gmaData$missingParams,
 									gmaData$genotypeKey,
 									gmaData$genotypeErrorRates, llrToTest,
 									itersPerMI,
 									round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)],
-									MIexcludeProb)
+									MIexcludeProb, maxMissingGenos)
+			}
 		} else {
 			stop("relationship and error type combination not recognized")
 		}
