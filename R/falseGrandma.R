@@ -20,7 +20,8 @@
 #'   based on Mendelian incompatibilities.
 #' @param maxMissingGenos the maximum number of missing genotypes a sample can have before you would 
 #'   choose to omit it from analysis
-#' @param method strat for stratified, IS for importance sampling. Only used for ssGP.
+#' @param method strat for stratified, IS for importance sampling. Only used for ssGP. Do not use method = "old", 
+#'   this is currently for internal testing and will be soon removed. 
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
@@ -158,7 +159,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	                          gmaData$genotypeKey,
 	                          gmaData$genotypeErrorRates, llrToTest,
 	                          itersPerMI,
-	                          round(seed), skipBaseline, MIexcludeProb)
+	                          round(seed), skipBaseline, MIexcludeProb, maxMissingGenos)
 
 		} else if(tRel == "falseNegative"){
 			errResults <- list(falseNeg_ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 

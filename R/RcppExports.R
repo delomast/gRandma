@@ -179,7 +179,7 @@ strat_ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, g
 #' @keywords internal
 #' @noRd
 #' @export
-strat_otherPopERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb) {
-    .Call(`_gRandma_strat_otherPopERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb)
+strat_otherPopERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb, maxMissingGenos) {
+    .Call(`_gRandma_strat_otherPopERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, itersPerMI, seed, skipBaseline, MIexcludeProb, maxMissingGenos)
 }
 

@@ -320,7 +320,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		for(int mi = 0; mi <= miLimit; mi++) pNumMI_OBS[mi] /= (1 - probAnyFail);
 		
 		// some results storage for full results reporting
-		vector <vector <double> > falsePosPerStrata (miLimit, 
+		vector <vector <double> > falsePosPerStrata (miLimit + 1, 
               vector <double> (llrToTestC.size(), 0)); // indices: num of MI, llr threshold
 		
 		// inititate results storage for this pop - one entry for each llr
@@ -332,7 +332,7 @@ Rcpp::List strat_ERRORsP(Rcpp::List baselineParams,
 		select_MI[0] = 1;
 		select_MI[1] = 0;
 		
-		for(int mi = 0; mi < miLimit; mi++){
+		for(int mi = 0; mi <= miLimit; mi++){
 			Rcpp::checkUserInterrupt();
 			// check if prob of seeing this many MIs is zero
 			// if it's zero, throw a warning and skip this stratum
