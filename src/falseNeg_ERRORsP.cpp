@@ -31,7 +31,7 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
                            Rcpp::List genotypeKey,
                            Rcpp::List genotypeErrorRates, Rcpp::NumericVector llrToTest,
                            int N,
-                           int seed, double MIexcludeProb
+                           int seed, double MIexcludeProb, int maxMissingGenos
 ){
 	//////////////////////
 	// first, turn all inputs into non-Rcpp c++ classes
@@ -67,14 +67,6 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
 	
 	// initiate random number generator
 	mt19937 rg (seed);
-
-	// random number generators for missing genotypes for each locus
-	// simple Bernoulli
-	vector <bernoulli_distribution> randMissing;
-	for(int i = 0; i < nLoci; i++){ 
-		bernoulli_distribution tempDist (missingParamsC[i][0] / (missingParamsC[i][0] + missingParamsC[i][1]));
-		randMissing.push_back(tempDist);
-	}
 	
 	// since using true trio as importance sampling distribution, can calculate pos and neg at the same time
 	vector <int> popResults;
@@ -199,6 +191,32 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
 			pairGenosLookup.push_back(tempGenos);
 		}
 		
+		// forward algorithm for missing genotypes
+		vector <double> prob_missing_geno (nLoci, 0); // probability that a genotype at locus i is missing
+		for(int i = 0; i < nLoci; i++) prob_missing_geno[i] = missingParamsC[i][0] / 
+			(missingParamsC[i][0] + missingParamsC[i][1]);
+		
+		vector <double> probTotalMiss (nLoci + 1, 0); // probability of ending the chain in each state
+		vector <vector <double> > probTotalMiss_all; // one entry for each step of the chain
+		calcProbSumMI_returnAll(prob_missing_geno, probTotalMiss, probTotalMiss_all);
+		
+		// set up vectors of states and relative probabilities for sampling
+		vector <int> numMissingState (maxMissingGenos + 1);
+		vector <double> numMissingProb (maxMissingGenos + 1);
+		double tSum = 0;
+		for(int i = 0; i <= maxMissingGenos; i++){
+			numMissingState[i] = i;
+			numMissingProb[i] = probTotalMiss[i];
+			tSum += probTotalMiss[i];
+		}
+		// normalize for kicks
+		for(int i = 0; i <= maxMissingGenos; i++) numMissingProb[i] /= tSum;
+		
+		// some vectors to use with sampleC in the backwards algorithm
+		vector <int> select_miss (2, 0);
+		select_miss[0] = 1;
+		vector <double> prob_miss_nomiss (2, 0);
+		
 		// inititate results storage for this pop - one entry for each llr
 		vector <double> falseNeg (llrToTestC.size(), 0);
 
@@ -213,10 +231,33 @@ Rcpp::DataFrame falseNeg_ERRORsP(Rcpp::List baselineParams,
 				// sample observed genotypes
 				sampPair = pairGenosLookup[i][sampleC(combo[i], prob[i], rg)]; // sample a trio of observed genotypes
 
-				// add missing genotypes as appropriate
-				for(int j = 0; j < 2; j++) if(randMissing[i](rg)) sampPair[j] = -9;
 				p1Genos[i] = sampPair[0];
 				dGenos[i] = sampPair[1];
+			}
+			
+			// backwards algorithm to add missing genotypes
+			// choose state : number of missing genotypes
+			int state_p1 = sampleC(numMissingState, numMissingProb, rg);
+			int state_d = sampleC(numMissingState, numMissingProb, rg);
+			// choose missing genotypes
+			for(int i = nLoci; i > 0; i--){
+				if(state_p1 + state_d == 0) break;
+				//gpa
+				prob_miss_nomiss[0] = 0;
+				if(state_p1 > 0) prob_miss_nomiss[0] = probTotalMiss_all[i-1][state_p1 - 1] * prob_missing_geno[i-1];
+				prob_miss_nomiss[1] = probTotalMiss_all[i-1][state_p1] * (1 - prob_missing_geno[i-1]);
+				if(sampleC(select_miss, prob_miss_nomiss, rg) == 1){
+					p1Genos[i-1] = -9;
+					state_p1--;
+				}
+				//d
+				prob_miss_nomiss[0] = 0;
+				if(state_d > 0) prob_miss_nomiss[0] = probTotalMiss_all[i-1][state_d - 1] * prob_missing_geno[i-1];
+				prob_miss_nomiss[1] = probTotalMiss_all[i-1][state_d] * (1 - prob_missing_geno[i-1]);
+				if(sampleC(select_miss, prob_miss_nomiss, rg) == 1){
+					dGenos[i-1] = -9;
+					state_d--;
+				}
 			}
 			
 			// filter by number of obsereved MI (with missing data), if desired

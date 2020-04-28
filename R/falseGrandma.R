@@ -165,7 +165,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 			errResults <- list(falseNeg_ERRORsP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 						gmaData$missingParams, gmaData$genotypeKey,
 		         gmaData$genotypeErrorRates, llrToTest, round(N), round(seed),
-						MIexcludeProb)
+						MIexcludeProb, maxMissingGenos)
 				)
 
 		} else if (tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous")) {

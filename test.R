@@ -33,12 +33,11 @@ fPunrel2[[1]]
 fPunrel[[2]][1:10,]
 fPunrel2[[2]][1:10,]
 
-fPpair <- falseGrandma(gmaInputFall, relationship = c("sP"), 
-								llrToTest = c(1,5,10,15,20), seed = 7, 
-								itersPerMI = rep(1000, 15), 
-								errorType = c("pairwise"), MIexcludeProb = 0)
-fPpair[[4]][1:10,]
-head(fPpair[[1]])
+fPpair <- falseGrandma(gmaInputBoth, relationship = c("sP"), 
+								llrToTest = c(10), seed = 7, 
+								itersPerMI = rep(2000, 15), 
+								errorType = c("pairwise"))
+fPpair[[1]]
 
 
 falseGrandma(gmaInputSawt, relationship = c("sP"), 

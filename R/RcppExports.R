@@ -32,8 +32,8 @@ ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotyp
 #' @keywords internal
 #' @noRd
 #' @export
-falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb) {
-    .Call(`_gRandma_falseNeg_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb)
+falseNeg_ERRORsP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb, maxMissingGenos) {
+    .Call(`_gRandma_falseNeg_ERRORsP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb, maxMissingGenos)
 }
 
 #' estimating false positive error rates for single-sided grandparent pair vs unrelated
