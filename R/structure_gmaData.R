@@ -30,8 +30,9 @@ construct_grandma <- function(x){
 
 #' print method for gmaData
 #' @param x a gmaData object
+#' @param ... ignored
 #' @export
-print.gmaData <- function(x){
+print.gmaData <- function(x, ...){
 	cat("\ngmaData object with\n\t")
 	cat(length(x$baselineParams), " baseline population(s)\n\t")
 	if(is.null(x$unsampledPopsParams)){
