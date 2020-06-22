@@ -19,10 +19,19 @@
 
 construct_grandma <- function(x){
 
-	# do some checking here of required values
+	# checking required values
 	gmaDataNames <- c("baseline", "mixture", "unsampledPops", "genotypeErrorRates", "genotypeKeys", 
 							"alleleKeys", "baselineParams", "unsampledPopsParams", "missingParams")
-	if(sum(names(x) != gmaDataNames) > 0) stop("Wrong names to make a gmaData object")
+	if(sum(names(x) != gmaDataNames) > 0) stop("Wrong names or order to make a gmaData object")
+	if(!is.data.frame(x$baseline)) stop("baseline must be a dataframe")
+	if(!is.null(x$mixture) && !is.data.frame(x$mixture)) stop("mixture must be a dataframe or NULL")
+	if(!is.null(x$unsampledPops) && !is.data.frame(x$unsampledPops)) stop("unsampledPops must be a dataframe or NULL")
+	if(!is.list(x$genotypeErrorRates)) stop("genotypeErrorRates must be a list")
+	if(!is.list(x$genotypeKeys)) stop("genotypeKeys must be a list")
+	if(!is.list(x$alleleKeys)) stop("alleleKeys must be a list")
+	if(!is.list(x$baselineParams)) stop("baselineParams must be a list")
+	if(!is.null(x$unsampledPopsParams) && !is.list(x$unsampledPopsParams)) stop("unsampledPopsParams must be a list or NULL")
+	if(!is.list(x$missingParams)) stop("missingParams must be a list")
 	
 	class(x) <- "gmaData"
 	return(x)
@@ -49,3 +58,11 @@ print.gmaData <- function(x, ...){
 	cat("\n\n")
 	
 }
+
+#' An example dataset for input
+#' 
+#' A dataset containing microhaps and SNPs for a large 
+#' number of individuals across several populations
+#' @format a dataframe
+"data_mh_snp"
+

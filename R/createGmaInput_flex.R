@@ -2,17 +2,18 @@
 #' 
 #' @param baseline a dataframe of the baseline individuals to use to infer relationships. The first column should
 #'   be the population each individual is from. The second column is the individual's identifier.
-#'   Following columns are genotypes, with columns 3 adn 4 being Allele1 and 2 for locus 1, columns
-#'   5 and 6 beign locus 2, ... This is a "two column per call" type of organization. Genotypes 
-#'   should be given as concatenated basecalls, with each base represented by a single character. Some examples of
-#'   microhaplotype alleles are "ACA", "AAD", "CTCTGGA". Some SNP alleles (which are just microhaplotypes
+#'   Following columns are genotypes, with columns 3 and 4 being Allele1 and 2 for locus 1, columns
+#'   5 and 6 being locus 2, ... This is a "two column per call" type of organization. Microhap and SNP genotypes 
+#'   should be given as concatenated basecalls, with each base represented by a single character.
+#'   Microsat genotypes should be given as either the allele length or the number of repeats. Some examples of
+#'   microhap alleles are "ACA", "AAD", "CTCTGGA". Some SNP alleles (which are just microhaplotypes
 #'   with a length of one base) are "A", "G", "D". In these examples, deletions are represented by "D". Missing genotypes
-#'   should be NA.
+#'   must be NA.
 #' @param mixture a dataframe of the mixture individuals to infer relationships for. The first column  is the individual's identifier.
 #'   Following columns are genotypes, in the same manner as for \code{baseline}. The order and column names of the loci 
 #'   must be the same in both the baseline and mixture dataframes.
-#' @param unsampledPops a dataframe of the individuals sampled from the "unsampled populations" used to estimate allele frequencies 
-#'   in these populations. See details for more explanation. Column 1 has the baseline population that an individual corresponds to, 
+#' @param unsampledPops THIS OPTION IS CURRENTLY EXPERIMENTAL a dataframe of the individuals sampled from the "unsampled populations" used to estimate allele frequencies 
+#'   in these populations. Column 1 has the name of the baseline population that an individual corresponds to, 
 #'   column 2 is the individual's identifier
 #'   (not currently used, but must be present). The following columns are genotypes, in the same manner as for \code{baseline}. 
 #'   The order and column names of the loci must be the same as in the baseline and mixture dataframes.
@@ -21,14 +22,18 @@
 #'   to use across all loci, or a dataframe with each row representing a locus. Column 1 is the locus name,
 #'   and column 2 is the error rate (probability of observing any allele other than the correct allele).
 #'   The locus name must be the column name of allele 1 for the corresponding locus in the baseline and mixture dataframes
-#' @param dropoutProb either a constant value representing teh probability that any allele in any locus drop out, or
+#' @param dropoutProb either a constant value representing the probability that any allele in any locus drop out, or
 #'   a dataframe with column 1 being locus name, column 2 being allele, and column 3 being dropout probability.
 #'   The locus name must be the column name of allele 1 for the corresponding locus in the baseline and mixture dataframes
+#' @param markerType either "microhaps" if the dataset contains microhaps and/or SNPs, or "microsats" if your dataset contains
+#'   microsats
 #' @param alleleDistFunc a function that takes the distance between two non-identical alleles (either number of 
-#'   basepair distances for snps/microhaps,
+#'   basepair differences for snps/microhaps,
 #'   or the numeric distance for microsats) as input, and outputs the weight to give the probabilty of misgenotyping one allele
-#'   as the other. The default is weight = 1/x where x is the distance. The probabilty of misgenotyping is the normalized weight
-#'   multiplied by the perAlleleError for that locus.
+#'   as the other. The default is weight = 1/x where x is the distance. The probabilties of misgenotyping 
+#'   a given allele are the normalized weights (between the given allele and all others)
+#'   multiplied by the perAlleleError for that locus. If you want misgenotyping to be equal across all alleles, then 
+#'   specify function(x) return(1)
 #' @importFrom Rcpp evalCpp
 #' @useDynLib gRandma, .registration=TRUE
 #' @export
@@ -36,7 +41,7 @@
 # this version is being written to be more flexible with error models
 
 createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAlleleError = NULL, dropoutProb = NULL,
-										  markerType = c("microhaps", "snps", "microsats"), 
+										  markerType = c("microhaps", "microsats"), 
 										  alleleDistFunc = NULL){
 	
 	mType <- match.arg(markerType)
@@ -60,10 +65,15 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAl
 	}
 	if(!is.null(unsampledPops) && is.na(unsampledPops)) unsampledPops <- NULL
 	useUnsamp <- !is.null(unsampledPops)
-	if (useUnsamp & is.data.frame(unsampledPops)){
+	if (useUnsamp & !is.data.frame(unsampledPops)){
 		warning("Coercing unsampledPops to a dataframe")
 		unsampledPops <- as.data.frame(unsampledPops)
 	}
+	# conversion for tibbles
+	if(any(grepl("tbl", class(baseline)))) baseline <- as.data.frame(baseline)
+	if(any(grepl("tbl", class(mixture)))) mixture <- as.data.frame(mixture)
+	if(useUnsamp & any(grepl("tbl", class(unsampledPops)))) unsampledPops <- as.data.frame(unsampledPops)
+		
 	if(any(apply(baseline[,1:2],2, function(x) any(is.na(x))))) stop("NA values are not allowed in baseline columns 1 and 2")
 	if(useUnsamp && any(apply(unsampledPops[,1:2],2, function(x) any(is.na(x))))) stop("NA values are not allowed in unsampledPops columns 1 and 2")
 	if(any(is.na(mixture[,1]))) stop("NA values are not allowed in mixture column 1")
