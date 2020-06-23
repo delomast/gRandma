@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 # CHNK data from gRandma demo
 load("CHNK_for_testing.rda")
 
@@ -124,3 +125,5 @@ pair_ssGP <- falseGrandma(gmaInputFall, relationship = c("ssGP"),
 
 pair_ssGP[[1]]
 pair_ssGP[[2]]
+=======
+>>>>>>> b54f17d3db80c31ba33987e95f7bf5bb79dd1814

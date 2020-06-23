@@ -74,7 +74,7 @@ countAlleles <- function(genotypes, alleles){
 }
 
 #' convert NA entries to -9 for c++ to recognize easily
-#' #param v vector of entries for which to convert
+#' @param v vector of entries for which to convert
 #' @keywords internal
 #' @noRd
 convertMissing <- function(v){
