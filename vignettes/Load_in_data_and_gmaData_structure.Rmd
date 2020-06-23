@@ -44,15 +44,15 @@ For most things, you will just take this object and use it as input for other fu
 
 gmaData objects are lists with nine entries:
 
-* `baseline`: A recoded, one-column per call version of the baseline. Genotypes are represented by an integer (starting at 0) and missing genotypes are `NA`.
-* `mixture`: A recoded version of the input mixture (if one was input).
+* `baseline`: A recoded, one-column per call version of the baseline (potential grandparents/parents). Genotypes are represented by an integer (starting at 0) and missing genotypes are `NA`.
+* `mixture`: A recoded version of the input mixture (potential descendants, if one was input).
 * `unsampledPops`: experimental - ignore and do not use for now
 * `genotypeErrorRates`: a list of matrices giving the genotyping error model. The row label indicates the true genotype and the column indicates the observed genotypes. The values are the probability of observing each genotype given the true genotype.
 * `genotypeKeys`: A list of dataframes defining each of the genotypes as represented by integers
 * `alleleKeys`: A list of dataframes defining each of the alleles as represented by integers
 * `baselineParams`: A list with an entry for each baseline population. Each population is represented by another list of numeric vectors - one for each locus. These vectors are the parameters of a Dirichlet posterior for estimates of allele frequencies given a Dirichlet prior with 1/n for all parameters where n is the number of alleles at that locus and ignoring genotyping error. The allele frequencies used by gRandma for a given baseline population and locus are these values normalized to sum to 1.
 * `unsampledPopsParams`: experimental - ignore and do not use for now
-* `missingParams`: A list of numeric vectors, one for each locus. These have the parameters of a Beta posterior for estimates of the proability a genotype is missing given a Beta(.5,.5) prior.
+* `missingParams`: A list of numeric vectors, one for each locus. These have the parameters of a Beta posterior for estimates of the proability a genotype is missing given a Beta(.5,.5) prior. The probabilities of missing genotypes used by gRandma for a given locus are these values normalized to sum to 1.
 
 ```{r}
 head(gData_1$baseline)
@@ -65,4 +65,20 @@ gData_1$missingParams[1:5]
 ```
 
 
+Now let's pretend we have separate mixture and baseline populations. These should be two separate dataframes, with identical columns expect that the mixture dataframe should not have the column representing populations. We can split our example data into two:
+```{r}
+mixtureData <- data_mh_snp[data_mh_snp$Pop == "Pop_4",]
+mixtureData <- mixtureData[,-1] # remove Pop column from mixture
+baselineData <- data_mh_snp[data_mh_snp$Pop != "Pop_4",]
+mixtureData[1:5,1:5]
+baselineData[1:5,1:5]
+
+```
+
+And now we can create a gmaData object with both a baseline and a mixture.
+```{r}
+gData_2 <- createGmaInput(baseline = baselineData, mixture = mixtureData, perAlleleError = .005, dropoutProb = .005,
+										  markerType = "microhaps")
+gData_2
+```
 

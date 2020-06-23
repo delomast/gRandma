@@ -9,3 +9,14 @@ Current options: </br>
 * "single-sided" grandparentage: a trio of grandchild + both maternal grandparents (or both paternal grandparents) </br>
 * single parentage: a pair of parent + offspring </br>
 
+Install with:
+```
+devtools::install_github("delomast/gRandma")
+```
+
+To install and view the vignette:
+```
+devtools::install_github("delomast/gRandma", build_vignettes = TRUE)
+browseVignettes("gRandma")
+```
+

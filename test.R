@@ -30,7 +30,7 @@ for(i in seq(3,ncol(data_mh_snp) - 1, 2)){
 to_remove <- c(to_remove, to_remove + 1)
 data_mh_snp <- data_mh_snp[,-to_remove]
 # add data to package
-usethis::use_data(data_mh_snp, overwrite = TRUE)
+usethis::use_data(data_mh_snp, overwrite = TRUE, internal = FALSE)
 
 # add vignette
 usethis::use_vignette("Load_in_data_and_gmaData_structure")
