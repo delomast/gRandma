@@ -4,8 +4,15 @@
 \alias{falseGrandma}
 \title{estimate per-comparison error rates}
 \usage{
-falseGrandma(gmaData, relationship = c("ssGP", "test1", "test2"),
-  llrToTest, N = 10000, seed = NULL)
+falseGrandma(
+  gmaData,
+  relationship = c("ssGP", "sP"),
+  llrToTest,
+  N = 10000,
+  seed = NULL,
+  itersPerMI = NULL,
+  errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous")
+)
 }
 \arguments{
 \item{gmaData}{the gmaData object containing your baseline populations and potential descendents. This 
@@ -20,6 +27,10 @@ input is created by \code{createGmaInput}}
 
 \item{seed}{a positive integer to use as a seed for random number generation. If \code{NULL}, a seed is 
 chosen based on the current system time}
+
+\item{pairwise}{TRUE to estimate false positive rate for pairwise combinations of the baseline populations.
+In otherwords, the rate at which mixture individuals from one population have llr's equal to or above 
+the threshold when being tested against the baseline of another population.}
 }
 \description{
 some more here

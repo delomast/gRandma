@@ -4,10 +4,12 @@
 \alias{print.gmaData}
 \title{print method for gmaData}
 \usage{
-\method{print}{gmaData}(x)
+\method{print}{gmaData}(x, ...)
 }
 \arguments{
 \item{x}{a gmaData object}
+
+\item{...}{ignored}
 }
 \description{
 print method for gmaData

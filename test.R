@@ -1,129 +1,36 @@
-<<<<<<< HEAD
-# CHNK data from gRandma demo
-load("CHNK_for_testing.rda")
+# creating example data file
 
-gmaInputFall <- createGmaInput(baseline = filterFall$baseline, mixture = filterFall$mixture,
-										 unsampledPops = NULL,perAlleleError = .005,
-										 dropoutProb = 0)
-
-gmaInputSawt <- createGmaInput(baseline = filterSawt$baseline, mixture = filterSawt$mixture,
-										 unsampledPops = NULL, perAlleleError = .005,
-										 dropoutProb = .005)
-commonCol <- intersect(colnames(filterSawt$baseline), colnames(filterFall$baseline))
-bothBase <- rbind(filterSawt$baseline[,commonCol], filterFall$baseline[,commonCol])
-gmaInputBoth <- createGmaInput(baseline = bothBase,
-										 unsampledPops = NULL, perAlleleError = .005,
-										 dropoutProb = .005)
-
-fN <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
-								 llrToTest = c(1,5,10,15,20), N = 1000, seed = 7, itersPerMI = NULL, 
-								 errorType = c("falseNegative"))
-fN
-fPunrel <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
-								 llrToTest = c(1,5,10,15,20), seed = 7, 
-						 itersPerMI = c(rep(2000, 15), rep(0, 238 - 15)), 
-								 errorType = c("Aunt"), method = "old")
-system.time(
-fPunrel2 <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
-								llrToTest = c(1,5,10,15,20), seed = 7, 
-								itersPerMI = rep(10000, 15), 
-								errorType = c("Aunt"))
-)
-fPunrel[[1]]
-fPunrel2[[1]]
-fPunrel[[2]][1:10,]
-fPunrel2[[2]][1:10,]
-
-fPpair <- falseGrandma(gmaInputBoth, relationship = c("sP"), 
-								llrToTest = c(10), seed = 7, 
-								itersPerMI = rep(2000, 15), 
-								errorType = c("pairwise"))
-fPpair[[1]]
-
-
-falseGrandma(gmaInputSawt, relationship = c("sP"), 
-				 llrToTest = c(1,5,10,15,20), seed = 7, 
-				 itersPerMI = c(rep(2000, 15), rep(0, 238 - 15)), 
-				 errorType = c("Aunt"))[[1]]
-
-temp <- falseGrandma(gmaInputSawt, relationship = c("sP"), 
-				 llrToTest = c(1,5,10,15,20), seed = 7, 
-				 itersPerMI = c(rep(20, 15), rep(0, 238 - 15)), 
-				 errorType = c("Unrel"))
-
-temp <- falseGrandma(gmaInputBoth, relationship = c("sP"), 
-				 llrToTest = c(1,5,10,15,20), seed = 7, 
-				 itersPerMI = rep(20, 238), 
-				 errorType = c("pairwise"))
-
-assign <- inferGrandma(gmaInputSawt, relationship = c("sP"), crossRecords = NULL, minLLR = 0,
-								 filterLLR = TRUE, MIexcludeProb = .0001)
-
-
-gmaInputSawt$baseline[1:200,2]
-crossRec <- data.frame("OtsSAWT14S", gmaInputSawt$baseline[1:100,2], gmaInputSawt$baseline[101:200,2])
-assignGP <- inferGrandma(gmaInputSawt, relationship = c("ssGP"), crossRecords = crossRec, minLLR = 0,
-								 filterLLR = TRUE, MIexcludeProb = .0001)
-head(assignGP)
-
-fpStrat <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
-								llrToTest = c(1,5,10,15,20), seed = 7, 
-								itersPerMI = c(rep(20, 15), rep(0, 238 - 15)), 
-								errorType = c("Unrel"))
-colnames(filterSawt$baseline)[1:10]
-gmaInputSawtSmall <- createGmaInput(baseline = filterSawt$baseline[,1:102],
-										 unsampledPops = NULL, perAlleleError = .005,
-										 dropoutProb = .005)
-
-
-system.time(
-strat <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
-				 llrToTest = seq(1,10,1), seed = 7, 
-				 itersPerMI = rep(10000, 10), 
-				 errorType = c("Unrel"))
-)
-
-is <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
-				 llrToTest = seq(1,10,1), seed = 7, 
-				 N = 6000, method = "IS", 
-				 errorType = c("Unrel"))
-
-is
-
-strat[[1]]
-plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
-abline(0,1)
-
-
-
-plot(is[[1]]$falsePos, strat[[1]]$falsePosUnrel)
-abline(0,1)
-
-
-for(r in c("Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", 
-			  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
-			  "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous")){
-	print(
-		falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
-						 llrToTest = c(1), seed = 7, 
-						 itersPerMI = rep(100, 10), 
-						 errorType = r)
-	)
+# loading STHD mix of mh and snp loci
+data_mh_snp <- read.table("S:\\Eagle Fish Genetics Lab\\Tom\\microhap infrastructure\\EFGLmh\\example_snp_mh.txt", 
+								  sep = "\t", header = TRUE, na.strings = c("0", "00", "000", ""), colClasses = "character")
+# remove metadata
+data_mh_snp <- data_mh_snp[,-(3:8)]
+# remove some failed inds
+gS <- apply(data_mh_snp[,3:ncol(data_mh_snp)], 1, function(x) sum(is.na(x)) / length(x))
+data_mh_snp <- data_mh_snp[gS <= .1,]
+table(data_mh_snp$Pedigree)
+# remove small pop
+data_mh_snp <- data_mh_snp[data_mh_snp$Pedigree != "OmyEFSW19S",]
+# change names to be generic 
+data_mh_snp$Individual.Name <- paste0("Ind", 1:nrow(data_mh_snp))
+data_mh_snp$Pedigree <- paste0("Pop_", as.numeric(as.factor(data_mh_snp$Pedigree)))
+table(data_mh_snp$Pedigree)
+colnames(data_mh_snp)[1:2] <- c("Pop", "Ind")
+nLoci <- (ncol(data_mh_snp) - 2) / 2
+colnames(data_mh_snp)[seq(3,ncol(data_mh_snp) - 1, 2)] <- paste0("Locus_", 1:nLoci)
+colnames(data_mh_snp)[seq(4,ncol(data_mh_snp), 2)] <- paste0("Locus_", 1:nLoci, ".A2")
+# remove loci with all fails or no variation
+to_remove <- c()
+for(i in seq(3,ncol(data_mh_snp) - 1, 2)){
+	a <- c(data_mh_snp[,i], data_mh_snp[,i+1])
+	a <- unique(a)
+	a <- a[!is.na(a)]
+	if(length(a) < 2) to_remove <- c(to_remove, i)
 }
+to_remove <- c(to_remove, to_remove + 1)
+data_mh_snp <- data_mh_snp[,-to_remove]
+# add data to package
+usethis::use_data(data_mh_snp, overwrite = TRUE)
 
-strat_postfunk <- falseGrandma(gmaInputSawt, relationship = c("ssGP"), 
-							 llrToTest = seq(1,10,1), seed = 7, 
-							 itersPerMI = rep(1000, 10), 
-							 errorType = c("Unrel"))
-
-identical(strat_prefunk, strat_postfunk)
-
-pair_ssGP <- falseGrandma(gmaInputFall, relationship = c("ssGP"), 
-				 llrToTest = seq(1,10,1), seed = 7, 
-				 itersPerMI = rep(1000, 10), 
-				 errorType = c("pairwise"))
-
-pair_ssGP[[1]]
-pair_ssGP[[2]]
-=======
->>>>>>> b54f17d3db80c31ba33987e95f7bf5bb79dd1814
+# add vignette
+usethis::use_vignette("Load_in_data_and_gmaData_structure")

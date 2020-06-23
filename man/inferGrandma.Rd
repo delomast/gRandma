@@ -4,9 +4,14 @@
 \alias{inferGrandma}
 \title{Calculate log-likelihood ratios to infer relationships}
 \usage{
-inferGrandma(gmaData, relationship = c("ssGP", "test1", "test2"),
-  crossRecords = NULL, minLLR = 0, filterLLR = TRUE,
-  MIexcludeProb = 1e-04)
+inferGrandma(
+  gmaData,
+  relationship = c("ssGP", "sP"),
+  crossRecords = NULL,
+  minLLR = 0,
+  filterLLR = TRUE,
+  MIexcludeProb = 1e-04
+)
 }
 \arguments{
 \item{gmaData}{the gmaData object containing your baseline populations and potential descendents. This 
