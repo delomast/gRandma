@@ -27,8 +27,8 @@ input is created by \code{createGmaInput}}
 
 \item{filterLLR}{\code{TRUE} to filter results based on minLLR, \code{FALSE} to not.}
 
-\item{MIexcludeProb}{the maximum probability of exclusion for a true grandparent pair due to 
-Mendelian incompatibilities. If \code{0}, then no filtering of potential grandparent pairs is performed
+\item{MIexcludeProb}{the maximum probability of exclusion for a true relationship due to 
+Mendelian incompatibilities. If \code{0}, then no filtering is performed
 based on Mendelian incompatibilities.}
 }
 \description{

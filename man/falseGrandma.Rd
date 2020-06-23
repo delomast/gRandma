@@ -11,7 +11,13 @@ falseGrandma(
   N = 10000,
   seed = NULL,
   itersPerMI = NULL,
-  errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous")
+  errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous",
+    "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", "GAunt_Unrel",
+    "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", "Gaunt_GpCous", "HGAunt",
+    "HGAunt_GpCous", "GpCous"),
+  MIexcludeProb = 1e-04,
+  maxMissingGenos = NULL,
+  method = c("strat", "IS", "old")
 )
 }
 \arguments{
@@ -19,18 +25,29 @@ falseGrandma(
 input is created by \code{createGmaInput}}
 
 \item{relationship}{the relationship you want to test for: "ssGP" - single sided grandparentage 
-(a pair of either two maternal grandparents OR two paternal grandparents)}
+(a pair of either two maternal grandparents OR two paternal grandparents); "sP" - single parent inference}
 
-\item{llrToTest}{a vector of llr thresholds to estimate false positive and false negative rates for}
+\item{llrToTest}{a vector of llr thresholds to estimate error rates for}
 
-\item{N}{the number of Monte Carlo samples to take to estimate the error rates}
+\item{N}{the number of Monte Carlo samples to take to estimate the error rates (ignored for stratified methods)}
 
 \item{seed}{a positive integer to use as a seed for random number generation. If \code{NULL}, a seed is 
 chosen based on the current system time}
 
-\item{pairwise}{TRUE to estimate false positive rate for pairwise combinations of the baseline populations.
-In otherwords, the rate at which mixture individuals from one population have llr's equal to or above 
-the threshold when being tested against the baseline of another population.}
+\item{errorType}{the type of error estimate to make}
+
+\item{MIexcludeProb}{the maximum probability of exclusion for a true relationship due to 
+Mendelian incompatibilities. If \code{0}, then no filtering is performed
+based on Mendelian incompatibilities.}
+
+\item{maxMissingGenos}{the maximum number of missing genotypes a sample can have before you would 
+choose to omit it from analysis}
+
+\item{method}{strat for stratified, IS for importance sampling. Only used for ssGP. Do not use method = "old", 
+this is currently for internal testing and will be soon removed.}
+
+\item{itersperMI}{the number of iterations per Mendelian incompatibility, in order of 0, 1, ... 
+(ignored for non-stratified methods)}
 }
 \description{
 some more here
