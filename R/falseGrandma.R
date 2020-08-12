@@ -10,8 +10,7 @@
 #'   (a pair of either two maternal grandparents OR two paternal grandparents); "sP" - single parent inference 
 #' @param llrToTest a vector of llr thresholds to estimate error rates for
 #' @param N the number of Monte Carlo samples to take to estimate the error rates (ignored for stratified methods)
-#' @param seed a positive integer to use as a seed for random number generation. If \code{NULL}, a seed is 
-#'   chosen based on the current system time 
+#' @param seed a positive integer to use as a seed for random number generation.
 #' @param itersperMI the number of iterations per Mendelian incompatibility, in order of 0, 1, ... 
 #'   (ignored for non-stratified methods)
 #' @param errorType the type of error estimate to make
@@ -25,7 +24,7 @@
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
-								 llrToTest, N = 10000, seed = NULL, itersPerMI = NULL, 
+								 llrToTest, N = 10000, seed = sample.int(.Machine$integer.max, 1), itersPerMI = NULL, 
 								 errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous",
 								 				  "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", 
 								 				  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
@@ -35,9 +34,6 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	method <- match.arg(method)
 	rel <- match.arg(relationship)
 	tRel <- match.arg(errorType)
-	if(is.null(seed)) seed <- ceiling(as.numeric(format(Sys.time(), "%S")) * 
-												 	as.numeric(format(Sys.time(), "%j")) * 
-												 	as.numeric(format(Sys.time(), "%M")))
 	if(seed < 0) {
 		warning("seed must not be negative, setting seed to 1")
 		seed <- 1
