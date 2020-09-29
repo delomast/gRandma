@@ -40,7 +40,7 @@
 
 # this version is being written to be more flexible with error models
 
-createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAlleleError = NULL, dropoutProb = NULL,
+createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAlleleError = .005, dropoutProb = .005,
 										  markerType = c("microhaps", "microsats"), 
 										  alleleDistFunc = NULL){
 	
@@ -94,7 +94,7 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAl
 	}
 	if(any(perAlleleError[,2] < 0 | perAlleleError[,2] > 1)) stop("perAlleleError must be between 0 and 1, inclusive")
 	
-	if(any(!(markers %in% perAlleleError[,1]))) stop("not all markers have entries in perSNPerror")
+	if(any(!(markers %in% perAlleleError[,1]))) stop("not all markers have entries in perAlleleError")
 
 	# input error check
 	if(is.numeric(dropoutProb) && length(dropoutProb) != 1) stop("dropoutProb must either be a single number or a data frame")
