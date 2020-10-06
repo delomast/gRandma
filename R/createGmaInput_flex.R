@@ -122,6 +122,7 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAl
 		for(p in unsamPops) unsampledPopsParams[[as.character(p)]] <- list()
 	}
 	
+	allele_num_warn <- FALSE
 	# now, for each locus
 	for(m in seq(3, (ncol(baseline) - 1), 2)){
 
@@ -134,6 +135,8 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAl
 		alleles <- sort(unique(c(baseline[,m], baseline[,m+1], mixture[,m-1], mixture[,m])))
 		if(useUnsamp) alleles <- sort(unique(c(alleles, unsampledPops[,m], unsampledPops[,m+1])))
 		alleles <- alleles[!is.na(alleles)]
+		# warn if lots of alleles (slow estimates)
+		if(length(alleles) > 6) allele_num_warn <- TRUE
 		
 		# check that locus is variable and not all missing
 		if(length(alleles) == 0) stop("no genotypes for locus ", mName)
@@ -313,6 +316,9 @@ createGmaInput <- function(baseline, mixture = NULL, unsampledPops = NULL, perAl
 		alleleKeyList[[mName]] <- alleleKey
 
 	} # end for each locus
+	
+	# warn if expected to be slow
+	if(allele_num_warn) warning("Some of the loci have 7+ alleles. The current computation strategy may make calculations with this data slow. The more alleles, the slower calculations will be.")
 	
 	# drop alleles and keep genotype codes
 	baseline <- baseline[,c(1, 2, seq(3, (ncol(baseline) - 1), 2))]
