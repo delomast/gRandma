@@ -9,7 +9,7 @@ falseGrandma(
   relationship = c("ssGP", "sP"),
   llrToTest,
   N = 10000,
-  seed = NULL,
+  seed = sample.int(.Machine$integer.max, 1),
   itersPerMI = NULL,
   errorType = c("falseNegative", "pairwise", "Unrel", "Aunt", "HalfAunt", "ParCous",
     "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", "GAunt_Unrel",
@@ -17,7 +17,7 @@ falseGrandma(
     "HGAunt_GpCous", "GpCous"),
   MIexcludeProb = 1e-04,
   maxMissingGenos = NULL,
-  method = c("strat", "IS", "old")
+  method = c("strat", "IS", "test")
 )
 }
 \arguments{
@@ -31,8 +31,7 @@ input is created by \code{createGmaInput}}
 
 \item{N}{the number of Monte Carlo samples to take to estimate the error rates (ignored for stratified methods)}
 
-\item{seed}{a positive integer to use as a seed for random number generation. If \code{NULL}, a seed is 
-chosen based on the current system time}
+\item{seed}{a positive integer to use as a seed for random number generation.}
 
 \item{errorType}{the type of error estimate to make}
 
@@ -43,8 +42,8 @@ based on Mendelian incompatibilities.}
 \item{maxMissingGenos}{the maximum number of missing genotypes a sample can have before you would 
 choose to omit it from analysis}
 
-\item{method}{strat for stratified, IS for importance sampling. Only used for ssGP. Do not use method = "old", 
-this is currently for internal testing and will be soon removed.}
+\item{method}{strat for stratified, IS for importance sampling - currently only available for ssGP. Do not use method = "test", 
+this is currently for internal testing and will be removed.}
 
 \item{itersperMI}{the number of iterations per Mendelian incompatibility, in order of 0, 1, ... 
 (ignored for non-stratified methods)}

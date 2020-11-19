@@ -19,6 +19,24 @@ ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotyp
     .Call(`_gRandma_ERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, seed, MIexcludeProb, maxMissingGenos)
 }
 
+#' estimatign error rates for single-sided grandparent pair for other true relationship types
+#' Importance sampling Monte Carlo used for estimating false positive
+#' @param baselineParams Dirichlet parameters for allele frequencies
+#' @param unsampledPopParams Dirichlet parameters for allele frequencies
+#' @param missingParams Beta parameters for missing genotypes (failure to genotype rate)
+#' @param genotypeKey list of matrix for each locus, col1 is genotype, col2 is allele 1, col3 is allele 2
+#' @param genotypeErrorRates list of matrix for each locus, rows are actual genotype, columns are observed,
+#'   values are probability
+#' @param llrToTest Vector of llr's to test as threshold values
+#' @param N number of samples to take
+#' @param trueRel integer corresponding to true relationship type
+#' @keywords internal
+#' @noRd
+#' @export
+IS_rel_ERRORssGP <- function(baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, trueRel, seed, MIexcludeProb, maxMissingGenos) {
+    .Call(`_gRandma_IS_rel_ERRORssGP`, baselineParams, unsampledPopParams, missingParams, genotypeKey, genotypeErrorRates, llrToTest, N, trueRel, seed, MIexcludeProb, maxMissingGenos)
+}
+
 #' estimatign error rates for parent - offspring pair vs unrelated
 #' Monte Carlo used for estimating false negative
 #' @param baselineParams Dirichlet parameters for allele frequencies

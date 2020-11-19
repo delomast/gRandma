@@ -19,8 +19,8 @@
 #'   based on Mendelian incompatibilities.
 #' @param maxMissingGenos the maximum number of missing genotypes a sample can have before you would 
 #'   choose to omit it from analysis
-#' @param method strat for stratified, IS for importance sampling. Only used for ssGP. Do not use method = "old", 
-#'   this is currently for internal testing and will be soon removed. 
+#' @param method strat for stratified, IS for importance sampling - currently only available for ssGP. Do not use method = "test", 
+#'   this is currently for internal testing and will be removed. 
 #' 
 #' @export
 falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"), 
@@ -30,7 +30,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 								 				  "GAunt_Unrel", "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", 
 								 				  "Gaunt_GpCous", "HGAunt", "HGAunt_GpCous", "GpCous"),
 								 MIexcludeProb = .0001, maxMissingGenos = NULL,
-								 method = c("strat", "IS", "old")){
+								 method = c("strat", "IS", "test")){
 	method <- match.arg(method)
 	rel <- match.arg(relationship)
 	tRel <- match.arg(errorType)
@@ -40,7 +40,7 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 	}
 	if(is.null(maxMissingGenos)) maxMissingGenos <- ceiling(.1 * length(gmaData$genotypeKey))
 	if(maxMissingGenos %% 1 != 0) stop("maxMissingGenos must be an integer")
-	if(method == "IS" && (tRel != "Unrel" || rel != "ssGP")) stop("method of IS is only an option for ssGP and Unrel")
+	if(method == "IS" && rel != "ssGP") stop("method of IS is only an option for ssGP")
 	
 	useUnsamp <- FALSE
 	skipBaseline <- c() # so unsampled pops aren't tested as a baseline
@@ -115,11 +115,28 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 											maxMissingGenos)
 		} else {
 			if(method == "IS"){
-				errResults <- list(ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
+				if(tRel == "Unrel"){
+					errResults <- list(ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
 												gmaData$missingParams, gmaData$genotypeKey,
 												gmaData$genotypeErrorRates, llrToTest, round(N), round(seed),
 												MIexcludeProb, maxMissingGenos)
+						)
+				} else {
+					errResults <- list(IS_rel_ERRORssGP(gmaData$baselineParams,
+																	gmaData$unsampledPopsParams, gmaData$missingParams, gmaData$genotypeKey,
+																	gmaData$genotypeErrorRates, llrToTest, round(N), 
+																	c(0:length(ssGP_err_rels))[which(ssGP_err_rels == tRel)],
+																	round(seed), MIexcludeProb, maxMissingGenos)
 					)
+				}
+			} else if (method == "test"){
+				errResults <- list(IS_rel_ERRORssGP(gmaData$baselineParams,
+										gmaData$unsampledPopsParams, gmaData$missingParams, gmaData$genotypeKey,
+										gmaData$genotypeErrorRates, llrToTest, round(N), 
+										c(0:length(ssGP_err_rels))[which(ssGP_err_rels == tRel)],
+										round(seed), MIexcludeProb, maxMissingGenos)
+										)
+					
 			} else if (tRel == "falseNegative"){
 				# just running the IS function, doesn't really add significant comp time
 				errResults <- ERRORssGP(gmaData$baselineParams, gmaData$unsampledPopsParams, 
@@ -165,25 +182,13 @@ falseGrandma <- function(gmaData, relationship = c("ssGP", "sP"),
 				)
 
 		} else if (tRel %in% c("Unrel", "Aunt", "HalfAunt", "ParCous")) {
-			
-			if(method == "old"){
-				# for testing
-				errResults <- old_strat_ERRORsP(gmaData$baselineParams,
-													 gmaData$unsampledPopsParams, gmaData$missingParams,
-													 gmaData$genotypeKey,
-													 gmaData$genotypeErrorRates, llrToTest,
-													 itersPerMI,
-													 round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)],
-													 MIexcludeProb)
-			} else {
-				errResults <- strat_ERRORsP(gmaData$baselineParams,
+			errResults <- strat_ERRORsP(gmaData$baselineParams,
 									gmaData$unsampledPopsParams, gmaData$missingParams,
 									gmaData$genotypeKey,
 									gmaData$genotypeErrorRates, llrToTest,
 									itersPerMI,
 									round(seed), c(0,1,2,3)[which(c("Unrel", "Aunt", "HalfAunt", "ParCous") == tRel)],
 									MIexcludeProb, maxMissingGenos)
-			}
 		} else {
 			stop("relationship and error type combination not recognized")
 		}

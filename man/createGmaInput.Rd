@@ -8,8 +8,8 @@ createGmaInput(
   baseline,
   mixture = NULL,
   unsampledPops = NULL,
-  perAlleleError = NULL,
-  dropoutProb = NULL,
+  perAlleleError = 0.005,
+  dropoutProb = 0.005,
   markerType = c("microhaps", "microsats"),
   alleleDistFunc = NULL
 )

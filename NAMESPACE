@@ -2,6 +2,7 @@
 
 S3method(print,gmaData)
 export(ERRORssGP)
+export(IS_rel_ERRORssGP)
 export(calcDist_hap)
 export(calcDist_sat)
 export(createGmaInput)
