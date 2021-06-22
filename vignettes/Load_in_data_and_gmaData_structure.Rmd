@@ -29,18 +29,18 @@ data_mh_snp[1:5,1:8]
 ```
 While only microhaps are shown in these columns, this dataset has a mix of microhaps and SNPs (which are just microhaps with length 1 bp). There are seven populations and a total of 4121 individuals.
 
-Consider that these samples from 8 populations represent your "baseline" and you are searching for their descendants. Because we are well-organized, responsible scientists and thoroughly plan our experiments, we are estimating error rates before we launch a project of collecting and genotyping the potential descendants to determine if this project is feasible. Now we can create a gmaData object.
+Consider that these samples from 8 populations represent your "baseline" and you are searching for their descendants. We are estimating error rates before we launch a project of collecting and genotyping the potential descendants to determine if this project is feasible. Now we can create a gmaData object.
 
-We feed in this dataframe as the baseline in `createGmaInput`. We'll use a per allele error rate of .005 for all loci, and a dropout probability of .005 for all loci and all alleles. If you want to have variable error rates, these can be input as dataframes. See the detailed documentation for `createGmaInput`. We have a mixture of SNPs and microhaps, so for markerType we select "microhaps". For calculating error rates, we will use the default alleleDistFunc.
+We feed in this dataframe as the baseline in `createGmaInput`. We'll use a per allele error rate of .005 for all loci, and a dropout probability of .005 for all loci and all alleles. If you want to have variable error rates, these can be input as dataframes. See the detailed documentation for `createGmaInput`. We have a mixture of SNPs and microhaps, so for markerType we select "microhaps". For calculating error rates, we will set the alleleDistFunc to weight all alleles equally regardless of how similar they are.
 
 ```{r}
 gData_1 <- createGmaInput(baseline = data_mh_snp, perAlleleError = .005, dropoutProb = .005,
-										  markerType = "microhaps")
+										  markerType = "microhaps", alleleDistFunc = (function(x) return(1)))
 gData_1
 ```
 We see that we have 364 loci, 285 of them are biallelic, and there are some microhaps thrown in. We now have a gmaData object! 
 
-For most things, you will just take this object and use it as input for other functions in gRandma. But some users may want to access and/or manually edit the data being used. Or you may want to just inspect to make sure nothing unintended happend with the input data. Let's walk through the structure of the gmaData object. 
+For most things, you will just take this object and use it as input for other functions in gRandma. But some users may want to access and/or manually edit the data being used. Or you may want to just inspect to make sure nothing unintended happened with the input data. Let's walk through the structure of the gmaData object. 
 
 gmaData objects are lists with nine entries:
 
@@ -50,12 +50,12 @@ gmaData objects are lists with nine entries:
 * `genotypeErrorRates`: a list of matrices giving the genotyping error model. The row label indicates the true genotype and the column indicates the observed genotypes. The values are the probability of observing each genotype given the true genotype.
 * `genotypeKeys`: A list of dataframes defining each of the genotypes as represented by integers
 * `alleleKeys`: A list of dataframes defining each of the alleles as represented by integers
-* `baselineParams`: A list with an entry for each baseline population. Each population is represented by another list of numeric vectors - one for each locus. These vectors are the parameters of a Dirichlet posterior for estimates of allele frequencies given a Dirichlet prior with 1/n for all parameters where n is the number of alleles at that locus and ignoring genotyping error. The allele frequencies used by gRandma for a given baseline population and locus are these values normalized to sum to 1.
+* `baselineParams`: A list with an entry for each baseline population. Each population is represented by another list of numeric vectors - one for each locus. These vectors are the parameters of a Dirichlet posterior for estimates of allele frequencies using the observed frequencies in the baseline and a Dirichlet prior with 1/n for all parameters where n is the number of alleles at that locus. The allele frequencies used by gRandma for a given baseline population and locus are these values normalized to sum to 1.
 * `unsampledPopsParams`: experimental - ignore and do not use for now
-* `missingParams`: A list of numeric vectors, one for each locus. These have the parameters of a Beta posterior for estimates of the proability a genotype is missing given a Beta(.5,.5) prior. The probabilities of missing genotypes used by gRandma for a given locus are these values normalized to sum to 1.
+* `missingParams`: A list of numeric vectors, one for each locus. These have the parameters of a Beta posterior for estimates of the probability a genotype is missing using the observed frequency of missing genotypes and a Beta(0.5, 0.5) prior. The probabilities of missing genotypes used by gRandma for a given locus are these values normalized to sum to 1.
 
 ```{r}
-head(gData_1$baseline)
+gData_1$baseline[1:5,1:5]
 gData_1$genotypeErrorRates[1]
 gData_1$genotypeKeys[1]
 gData_1$alleleKeys[1]
@@ -81,4 +81,3 @@ gData_2 <- createGmaInput(baseline = baselineData, mixture = mixtureData, perAll
 										  markerType = "microhaps")
 gData_2
 ```
-
