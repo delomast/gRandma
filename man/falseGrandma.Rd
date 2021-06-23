@@ -33,14 +33,19 @@ input is created by \code{createGmaInput}}
 
 \item{seed}{a positive integer to use as a seed for random number generation.}
 
-\item{errorType}{the type of error estimate to make}
+\item{errorType}{the type of error estimate to make. Options for relationship = "ssGP": "falseNegative", 
+"Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", "GAunt_Unrel",
+"HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", "Gaunt_GpCous", "HGAunt",
+"HGAunt_GpCous", "GpCous". Options for relationship "sP": "falseNegative", 
+"Unrel", "Aunt", "HalfAunt", "ParCous". The "pairwise" option is experimental and should
+ not be used.}
 
 \item{MIexcludeProb}{the maximum probability of exclusion for a true relationship due to 
 Mendelian incompatibilities. If \code{0}, then no filtering is performed
 based on Mendelian incompatibilities.}
 
 \item{maxMissingGenos}{the maximum number of missing genotypes a sample can have before you would 
-choose to omit it from analysis}
+choose to omit it from analysis. Default is 10% of the total number of loci, rounded up}
 
 \item{method}{strat for stratified, IS for importance sampling - currently only available for ssGP. Do not use method = "test", 
 this is currently for internal testing and will be removed.}
@@ -49,8 +54,5 @@ this is currently for internal testing and will be removed.}
 (ignored for non-stratified methods)}
 }
 \description{
-some more here
-}
-\details{
-and more here
+estimate per-comparison error rates
 }

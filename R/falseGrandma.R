@@ -1,8 +1,6 @@
 #' estimate per-comparison error rates
 #' 
-#' some more here
 #' 
-#' and more here
 #' 
 #' @param gmaData the gmaData object containing your baseline populations and potential descendents. This 
 #'   input is created by \code{createGmaInput}
@@ -13,12 +11,17 @@
 #' @param seed a positive integer to use as a seed for random number generation.
 #' @param itersperMI the number of iterations per Mendelian incompatibility, in order of 0, 1, ... 
 #'   (ignored for non-stratified methods)
-#' @param errorType the type of error estimate to make
+#' @param errorType the type of error estimate to make. Options for relationship = "ssGP": "falseNegative", 
+#' "Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", "GAunt_Unrel",
+#' "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", "Gaunt_GpCous", "HGAunt",
+#' "HGAunt_GpCous", "GpCous". Options for relationship "sP": "falseNegative", 
+#' "Unrel", "Aunt", "HalfAunt", "ParCous". The "pairwise" option is experimental and should
+#'  not be used.
 #' @param MIexcludeProb the maximum probability of exclusion for a true relationship due to 
 #'   Mendelian incompatibilities. If \code{0}, then no filtering is performed
 #'   based on Mendelian incompatibilities.
 #' @param maxMissingGenos the maximum number of missing genotypes a sample can have before you would 
-#'   choose to omit it from analysis
+#'   choose to omit it from analysis. Default is 10% of the total number of loci, rounded up
 #' @param method strat for stratified, IS for importance sampling - currently only available for ssGP. Do not use method = "test", 
 #'   this is currently for internal testing and will be removed. 
 #' 
