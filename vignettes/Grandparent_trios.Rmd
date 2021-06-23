@@ -1,0 +1,164 @@
+---
+title: "Grandparent_trios"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Grandparent_trios}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(gRandma)
+```
+
+
+This will walk through an example of estimating error rates for assigning grandparent-grandchild trios 
+and inferring grandparent-grandchild trios.
+
+
+## Setup
+
+First, we make a gmaData object. For details, see the "Load_in_data_and_gmaData_structure" vignette.
+
+```{r}
+# removing loci with no variation in the subset of pops we are going to use
+tempData <- data_mh_snp[data_mh_snp$Pop %in% c("Pop_2", "Pop_4"),]
+tRem <- c()
+for(i in seq(3, ncol(tempData) - 1, 2)) if(length(na.omit(unique(c(tempData[[i]], tempData[[i+1]])))) < 2) tRem <- c(tRem, i)
+tempData <- tempData[,-c(tRem, tRem + 1)]
+# creating a gmaData object
+gData_1 <- createGmaInput(baseline = tempData[tempData$Pop == "Pop_2",], 
+								  mixture = tempData[tempData$Pop == "Pop_4",-1], 
+								  perAlleleError = .005, dropoutProb = .005,
+										  markerType = "microhaps", alleleDistFunc = (function(x) return(1)))
+```
+
+## Error rate estimation
+
+### False negative error rates
+
+We are first going to estimate false negative error rates. This is the probability that a true 
+grandparent-grandchild trio fails to assign. Here we are testing critical values ($c$ in the manuscript) 
+of $0, 1, 2, ..., 25$. 
+
+```{r}
+falseNegative <- falseGrandma(gData_1, relationship = "ssGP", 
+										llrToTest = seq(0, 25, 1), N = 10000,
+										seed = 7, errorType = "falseNegative")
+falseNegative[[1]][1:10,]
+```
+
+We now have an estimate of false negative error rates for each critical value for our one baseline population.
+
+### False positive error rates
+
+Let's first consider false positive error rates for unrelated trios. We 
+can estimate these rates by importance sampling, here running 10,000 iterations (you should run more), and testing 
+critical values from 0 to 9.
+
+```{r}
+falsePos1 <- falseGrandma(gData_1, relationship = "ssGP", 
+										llrToTest = seq(0, 9, 1), N = 10000,
+										seed = 7, errorType = "Unrel", method = "IS")
+falsePos1[[1]]
+```
+
+We now have false positive estimates. When false positive error rates are computed by importance sampling, 
+it is computationally almost free to also calculate false negative rates, so they are also reported. We can 
+see that this panel is not very powerful, with our false positive error 
+rate on the order of $10^{-6}$ with the false negative rate approaching $0.05$. 
+
+We can also calculate these error rates by stratified sampling. We will run 1,000 iterations in each stratum. This 
+is too few, but we will use it here because it is quick to build the vignette and because it will allow us to demonstrate 
+the main drawback of the stratified sampling approach. 
+If you wanted, you could use a different number of iterations in each stratum to target computational effort. The 
+input, `rep(1000, 10)`, tells it to run 1000 iterations in the first 10 strata (number of MIs from 0 - 9). We know from 
+the false negative output above that it is only going to consider 0 - 4 MIs, so the function will stop after 4. Giving a number of 
+iterations for extra strata is ok, but it will throw an error if you give too few. 
+
+```{r}
+falsePos2 <- falseGrandma(gData_1, relationship = "ssGP", 
+										llrToTest = seq(0, 9, 1), itersPerMI = rep(1000, 10),
+										seed = 7, errorType = "Unrel", method = "strat")
+```
+
+The output for stratified sampling is a list of 2. The first item has the overall false positive estimates:
+
+```{r}
+falsePos2[[1]]
+```
+
+The second item has the estimates for each stratum:
+
+```{r}
+falsePos2[[2]][1:10,]
+```
+
+The columns are:
+
+* `count_MI`: the number of observed Mendelian incompatibilities (MIs) that stratum corresponds to
+* `prob_count_MI`: the probability a trio of the defined relationship (Unrelated in this case)
+  has that number of MIs observed
+* `falsePosUnrel`: the false positive error rate estimated for that stratum. To get the number of
+  observed false positives during the simulation, multiply this number by the number of iterations 
+  run for that stratum (in this case, it was 1000)
+* `falsePosUnrelSD`: the estimated standard deviation for this stratum
+
+We can see right away that even for our lowest critical value of 0, the 4 MI stratum had 0 false 
+positives observed and the 3 MI stratum only had 1. So, obviously we need to increase the number 
+of iterations run for these strata to get a more reliable estimate. 
+
+Now how about trios of other relationships? The process and outputs are the same, we just change the 
+`errorType` argument to `falseGrandma`. For considering grandparent-grandchild trios, valid options 
+for `errorType` are: `"falseNegative", "Unrel", "True_GAunt", "True_Unrel", "True_HGAunt", "True_GpCous", "GAunt_Unrel",
+ "HGAunt_Unrel", "GpCous_Unrel", "GAunt", "GAunt_HGAunt", "Gaunt_GpCous", "HGAunt",
+ "HGAunt_GpCous"`, and `"GpCous"`. For example:
+ 
+```{r, eval=FALSE}
+# not run
+# importance sampling
+falsePos_gAuntIS <- falseGrandma(gData_1, relationship = "ssGP", 
+             llrToTest = seq(0, 9, 1), N = 1000000,
+             seed = 7, errorType = "GAunt", method = "IS")
+# stratified sampling
+falsePos_gAuntStrat <- falseGrandma(gData_1, relationship = "ssGP", 
+             llrToTest = seq(0, 9, 1), itersPerMI = rep(100000, 10),
+             seed = 7, errorType = "GAunt", method = "strat")
+```
+
+
+## Assigning grandparents
+
+Now we've estimated the error rates for this genetic panel and population, and for the sake of 
+the example, let's say we've decided on a critical value of 8. Let's now look for grandparent-grandchild trios. 
+We've already set up the gmaData object to have baseline individuals (potential grandparents) and 
+mixture individuals (potential grandchildren).
+
+Consider that by looking at metadata from the hatchery (sex, date of spawning, cross records, etc.) and/or 
+a genetic sex marker, you determine that these are the possible crosses that could have been made:
+
+```{r}
+potentialCrosses <- data.frame(Pop = "Pop_2",
+										 gp1 = gData_1$baseline[[2]][seq(1, 123, 2)],
+										 gp2 = gData_1$baseline[[2]][seq(2, 124, 2)]
+										 )
+```
+
+
+This will run the assignments and consider all combinations of grandparents listed in
+`potentialCrosses`. If you want to consider all possible combinations of grandparents within each given 
+baseline population, just omit the `crossRecords` argument.
+
+```{r}
+assignments <- inferGrandma(gData_1, relationship = "ssGP", minLLR = 8, crossRecords = potentialCrosses)
+assignments
+```
+
+And we have one grandparent-grandchild trio assigned. 
