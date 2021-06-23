@@ -78,10 +78,6 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "sP"), crossRecords =
 				" crossRecords and the baseline do not all match")
 	}
 
-	# make sure loci are in order in baseline, mixture, genotypeKey, genotypeErrorRates,
-	#   baselineParams, and unsampledPopParams
-	############# todo
-	
 	# turn NA genotypes into -9 for c++ to easily recognize
 	gmaData$baseline[,3:ncol(gmaData$baseline)] <- apply(gmaData$baseline[,3:ncol(gmaData$baseline), drop = FALSE], 2, convertMissing)
 	gmaData$mixture[,2:ncol(gmaData$mixture)] <- apply(gmaData$mixture[,2:ncol(gmaData$mixture), drop = FALSE], 2, convertMissing)
