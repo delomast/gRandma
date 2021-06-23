@@ -78,6 +78,6 @@ baselineData[1:5,1:5]
 And now we can create a gmaData object with both a baseline and a mixture.
 ```{r}
 gData_2 <- createGmaInput(baseline = baselineData, mixture = mixtureData, perAlleleError = .005, dropoutProb = .005,
-										  markerType = "microhaps")
+										  markerType = "microhaps", alleleDistFunc = (function(x) return(1)))
 gData_2
 ```
