@@ -21,7 +21,7 @@
 #'   Mendelian incompatibilities. If \code{0}, then no filtering is performed
 #'   based on Mendelian incompatibilities.
 #' @param maxMissingGenos the maximum number of missing genotypes a sample can have before you would 
-#'   choose to omit it from analysis. Default is 10% of the total number of loci, rounded up
+#'   choose to omit it from analysis. Default is 10\% of the total number of loci, rounded up
 #' @param method strat for stratified, IS for importance sampling - currently only available for ssGP. Do not use method = "test", 
 #'   this is currently for internal testing and will be removed. 
 #' 
