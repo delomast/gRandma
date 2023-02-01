@@ -51,10 +51,11 @@ microsats}
 \item{alleleDistFunc}{a function that takes the distance between two non-identical alleles (either number of 
 basepair differences for snps/microhaps,
 or the numeric distance for microsats) as input, and outputs the weight to give the probabilty of misgenotyping one allele
-as the other. The default is weight = 1/x where x is the distance. The probabilties of misgenotyping 
+as the other. The probabilties of misgenotyping 
 a given allele are the normalized weights (between the given allele and all others)
-multiplied by the perAlleleError for that locus. If you want misgenotyping to be equal across all alleles, then 
-specify function(x) return(1)}
+multiplied by the perAlleleError for that locus. Default is for misgenotyping to be equal across all alleles. If you
+wanted, for example, the probabiltiy to be proportional to the distance, you could 
+specify \code{alleleDistFunc = function(x) return(1/x)}}
 }
 \description{
 This creates a gmaData structure from user supplied dataframes
