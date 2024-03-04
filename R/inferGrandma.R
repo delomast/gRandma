@@ -25,6 +25,8 @@ inferGrandma <- function(gmaData, relationship = c("ssGP", "sP"), crossRecords =
 	
 	# input checking
 	if(!is.null(crossRecords)) {
+		# handle tibbles
+		if(any(grepl("tbl", class(crossRecords)))) crossRecords <- as.data.frame(crossRecords)
 		# make sure all individuals in crossRecords are in the baseline
 		if(any(!(crossRecords[,2] %in% gmaData$baseline[,2]))) stop("Some individuals in crossRecords are not in the baseline")
 		if(any(!(crossRecords[,3] %in% gmaData$baseline[,2]))) stop("Some individuals in crossRecords are not in the baseline")
