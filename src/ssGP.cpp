@@ -186,8 +186,7 @@ Rcpp::DataFrame ssGP(Rcpp::NumericMatrix baseline, Rcpp::NumericMatrix mixture,
 					pairs.push_back(tempVec);
 				}
 			}
-		}
-		if(pairs.size() == 0){ // either !useCR or no cross records for the current population
+		} else { // either !useCR
 			vector <int> baseInds;
 			for(int i=0, max = baselineC.size(); i < max; i++) {
 				if(baselineC[i][0] == pop) baseInds.push_back(baselineC[i][1]);
